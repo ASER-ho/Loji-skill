@@ -1,6 +1,6 @@
 ---
 schema_version: 1
-skill_version: "0.7.0"
+skill_version: "0.8.0"
 memory_policy: auto
 memory_consent: pending
 created_at: ""
@@ -59,6 +59,18 @@ conversation_count: 0
     confidence: high | medium | low
     basis: [依据简述]
 -->
+
+## 归档
+<!-- type: archived, 生命周期维护移入 -->
+<!-- 有价值的旧记忆冷藏于此，不参与日常回答，可恢复 -->
+<!-- 每条格式:
+  - content: [归档内容]
+    type: archived
+    archived_on: YYYY-MM-DD
+    original_type: temporary | project | inferred
+    note: [归档原因]
+-->
+<!-- 用户说"恢复记忆：X"时重新激活 -->
 
 ## 不应记录
 <!-- 全名、具体地址、公司名、财务数字等敏感信息 — 不记录 -->
