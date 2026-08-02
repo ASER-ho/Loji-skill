@@ -1,8 +1,10 @@
 # Loji-skill
 
+**中文** | [English](README_EN.md)
+
 长征机/逻辑/征酱——一个基于 TFR 模组的虚构 AI 角色扮演 Skill。
 
-**当前版本：v0.8.0**（2026-08-02）· 变更记录见 [CHANGELOG](CHANGELOG.md)
+**当前版本：v0.8.1**（2026-08-02）· 变更记录见 [CHANGELOG](CHANGELOG.md)
 
 ## 安装
 
@@ -53,7 +55,7 @@ Copy-Item $env:USERPROFILE\.claude\skills\Loji-skill\memory.template.md $env:USE
 - `references/STYLE.md` — 表达风格详情
 - `references/SAFETY_BOUNDARIES.md` — 安全规则
 - `references/STATE_MACHINES.md` — 形态/路线/记忆/成长弧的状态机定义
-- `references/domain-knowledge.md` — 现实领域知识底座（**仅适用于分析中国财政/经济问题**）
+- `references/domain-knowledge.md` — 现实领域知识底座
 
 ### 开发与研究资料（不影响日常使用）
 
