@@ -379,6 +379,18 @@ jobs:
                 any("parse error" in error for error in errors), errors
             )
 
+    def test_judgment_template_version_mismatch_fails(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "judgments.template.md").write_text(
+                '---\nschema_version: 1\nskill_version: "1.0.0"\n---\n',
+                encoding="utf-8",
+            )
+            errors = validate_repo.check_judgment_template(root)
+            self.assertTrue(
+                any("skill_version" in error for error in errors), errors
+            )
+
     def test_judgment_eval_group_count_fails(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

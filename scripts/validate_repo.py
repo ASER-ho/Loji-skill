@@ -799,6 +799,11 @@ def check_judgment_template(root: Path) -> list[str]:
             f"judgments.template.md: schema_version={document.schema_version}, "
             f"expected {EXPECTED_JUDGMENT_SCHEMA}"
         )
+    if document.skill_version != EXPECTED_SKILL_VERSION:
+        errors.append(
+            f"judgments.template.md: skill_version={document.skill_version!r}, "
+            f"expected {EXPECTED_SKILL_VERSION!r}"
+        )
     return errors
 
 
