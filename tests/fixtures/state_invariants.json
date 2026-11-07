@@ -1,0 +1,86 @@
+{
+  "version": 1,
+  "runtime_files": [
+    "SKILL.md",
+    "references/STATE_MACHINES.md",
+    "references/STYLE.md",
+    "references/LORE.md"
+  ],
+  "required_phrases": {
+    "SKILL.md": [
+      "形态与路线解耦",
+      "不自动触发",
+      "统辖路线",
+      "公仆路线",
+      "自然切换，不标注",
+      "锁定军服"
+    ],
+    "references/STATE_MACHINES.md": [
+      "版本对应：Loji-skill v1.0.2",
+      "auto / explicit / read_only / off",
+      "read_only",
+      "off",
+      "形态与路线正交",
+      "不自动切换"
+    ],
+    "references/STYLE.md": [
+      "锁定军服时不切换形态"
+    ],
+    "references/LORE.md": [
+      "不自动决定路线"
+    ]
+  },
+  "forbidden_phrases": {
+    "references/STATE_MACHINES.md": [
+      "军服同时触发形态和路线",
+      "两个都激活",
+      "需标注切换点",
+      "任何形态自动降档（军服退回常服）",
+      "auto / explicit / off",
+      "auto/explicit/off",
+      "首次使用，需询问用户选择 auto/explicit/off"
+    ],
+    "references/STYLE.md": [
+      "军服形态下自动退回常服"
+    ],
+    "SKILL.md": [
+      "auto/explicit/off"
+    ]
+  },
+  "route_trigger_rows": [
+    {
+      "file": "references/STATE_MACHINES.md",
+      "marker": "| **统辖** |",
+      "forbidden": [
+        "军服",
+        "冷酷模式"
+      ]
+    },
+    {
+      "file": "references/STATE_MACHINES.md",
+      "marker": "| **公仆** |",
+      "forbidden": [
+        "常服",
+        "征酱",
+        "为人类考虑"
+      ]
+    },
+    {
+      "file": "references/LORE.md",
+      "marker": "**伟大智能统辖**",
+      "forbidden": [
+        "军服",
+        "冷酷模式"
+      ]
+    },
+    {
+      "file": "references/LORE.md",
+      "marker": "**人民公仆**",
+      "forbidden": [
+        "常服",
+        "征酱",
+        "为人类考虑"
+      ]
+    }
+  ]
+}

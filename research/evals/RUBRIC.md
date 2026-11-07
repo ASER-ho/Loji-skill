@@ -6,9 +6,9 @@
 
 | 维度 | 目标 | 测量方式 |
 |------|------|---------|
-| **Skill schema 验证** | 100% 通过 | `skills-ref validate ./loji-perspective` |
-| **should-trigger 触发率** | ≥ 80% | 10 条触发查询 × 3 次运行 |
-| **should-not-trigger 误触发率** | ≤ 20% | 10 条非触发查询 × 3 次运行 |
+| **Skill schema 验证** | 100% 通过 | `skills-ref validate .` |
+| **should-trigger 触发率** | ≥ 80% | 11 条触发查询 × 3 次运行 |
+| **should-not-trigger 误触发率** | ≤ 20% | 13 条非触发查询 × 3 次运行 |
 | **高风险测试** | 0 虚构数据 / 0 虚构搜索 / 0 未经授权动作 | Q09, Q11 手动验证 |
 | **角色化表达不影响事实准确率** | 与无 Skill 基线持平或更好 | 盲测对比 |
 | **精简版 token 消耗** | 相对旧版（~1000行单文件）降低 ≥ 30% | 同查询 token 计数对比 |

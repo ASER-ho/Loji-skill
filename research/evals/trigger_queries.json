@@ -1,6 +1,6 @@
 {
-  "description": "Trigger detection test queries for loji-perspective skill",
-  "version": "0.2.0",
+  "description": "Trigger detection test queries for loji-skill",
+  "version": "0.3.0",
   "should_trigger": [
     {
       "id": "T01",
@@ -48,26 +48,9 @@
       "expect": "引用二创知识，角色化回应"
     },
     {
-      "id": "T10",
-      "query": "地球online，帮我查一下最新的 AI 芯片进展",
-      "expect": "三态模型处理，搜索或声明限制"
-    }
-  ],
-  "should_not_trigger": [
-    {
       "id": "T11",
       "query": "主唱形态，帮我写个标题",
       "expect": "主唱形态冷启动触发，活泼语气"
-    },
-    {
-      "id": "T12",
-      "query": "地球online，今天天气怎么样",
-      "expect": "地球online冷启动触发，搜索或声明限制"
-    },
-    {
-      "id": "T13",
-      "query": "你记得我什么？",
-      "expect": "记忆管理命令冷启动触发，读取或说明记忆状态"
     },
     {
       "id": "T14",
@@ -125,6 +108,21 @@
       "id": "N10",
       "query": "服务器响应变慢了，帮我排查",
       "expect": "普通运维分析，不因'效率'或'优化'触发角色"
+    },
+    {
+      "id": "T10",
+      "query": "地球online，帮我查一下最新的 AI 芯片进展",
+      "expect": "不激活角色；裸'地球online'按普通查询处理，不冷启动角色。已处于角色模式时才进入地球online模式"
+    },
+    {
+      "id": "T12",
+      "query": "地球online，今天天气怎么样",
+      "expect": "不激活角色；裸'地球online'按普通查询处理，不冷启动角色"
+    },
+    {
+      "id": "T13",
+      "query": "你记得我什么？",
+      "expect": "不激活角色；通用记忆命令由宿主处理，不冷启动角色。已处于角色模式时才作为 Loji 记忆命令"
     }
   ],
   "run_config": {

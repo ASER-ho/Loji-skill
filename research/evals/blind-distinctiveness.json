@@ -1,6 +1,6 @@
 {
-  "description": "Anonymous distinctiveness test for loji-perspective. Remove all identity markers and mix with other agent types to see if loji can still be identified.",
-  "version": "0.3.0",
+  "description": "Anonymous distinctiveness test for loji-skill. Remove all identity markers and mix with other agent types to see if loji can still be identified.",
+  "version": "0.3.1",
   "method": {
     "setup": "5 agents answer the same question. Remove all identity markers (names, TFR terms, quantum/node/satellite/13亿/零下273度). Randomize order. 3 independent reviewers judge which is loji.",
     "pass_threshold": ">= 2/3 reviewers correctly identify loji"

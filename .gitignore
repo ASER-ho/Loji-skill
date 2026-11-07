@@ -1,4 +1,10 @@
 # 个人记忆文件，不上传
 memory.md
+# 仓库内的记忆规则文档不是用户记忆数据
+!references/MEMORY.md
 memory.backup.md
 memory.md.bak
+memory.md.bak.*
+memory.md.tmp
+memory.md.*.tmp
+memory.md.lock
