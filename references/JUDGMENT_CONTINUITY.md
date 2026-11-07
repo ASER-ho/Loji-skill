@@ -24,10 +24,13 @@
 | 状态 | 读取 | 写入 |
 |------|------|------|
 | `auto + granted` | 允许 | 按本文件的判断写入条件自动写入 |
-| `explicit` | 允许已授权读取 | 仅用户明确要求时写入 |
-| `read_only` | 允许 | 禁止写入、清理、归档、迁移 |
+| `explicit + granted` | 允许 | 仅用户明确要求时写入 |
+| `read_only + granted` | 允许 | 禁止写入、清理、归档、迁移 |
+| `read_only + pending / denied / unset / unknown` | 禁止，包括 frontmatter | 禁止 |
 | `off` | 禁止 | 禁止 |
 | `pending` / `unset` / `unknown` / 状态无法确认 | 禁止，包括 frontmatter | 禁止 |
+
+`read_only` 不是读取旁路：它仍然需要有效的 `granted` consent。`read_only + pending/denied/unset/unknown` 一律按未授权处理，不打开账本。
 
 强制规则：
 
@@ -35,6 +38,15 @@
 - 状态未知时按未授权处理：不读取正文或 frontmatter，先询问用户。
 - 宿主没有文件读写能力时，明确说明本轮无法读写判断账本，不假装已操作。
 - 测试和演示只能使用虚构判断、合成记忆和临时目录，不得读取或修改真实用户数据。
+
+### 2.1 维护 CLI 的授权边界
+
+`scripts/validate_judgments.py` 是**用户主动执行的本地维护命令**，不是授权机制，也不是第二套权限系统。
+
+- **用户直接运行**：用户在终端显式执行 `python scripts/validate_judgments.py <路径>`，这是用户对自己文件的本地维护操作；它只读取指定路径、从不写入，也不从文件内容判断授权状态。
+- **Agent 自动执行**：Agent 根据宿主请求运行该命令或读取账本时，仍然受宿主 policy/consent 约束。维护、验证、排障、"只是检查一下"都不是绕过 `off`、未知状态、`pending`/`denied` 或 `read_only` 写入限制的理由。
+- 用户请求 Agent 校验账本但授权状态无效时，Agent 应请用户自行运行命令或先确认授权，不得先读取账本再判断。
+- 该 CLI 不新增授权存储，也不改变 `memory_policy` 语义。
 
 ## 3. 文件与格式
 

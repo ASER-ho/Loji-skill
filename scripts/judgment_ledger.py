@@ -146,10 +146,19 @@ def resolve_access(
             reason="policy is off; no read or write",
         )
     if policy == "read_only":
+        if consent != "granted":
+            return AccessDecision(
+                can_read=False,
+                can_write=False,
+                reason=(
+                    f"policy is read_only but consent is {consent!r}; "
+                    "read_only requires granted consent"
+                ),
+            )
         return AccessDecision(
             can_read=True,
             can_write=False,
-            reason="policy is read_only; read allowed, write denied",
+            reason="policy is read_only with granted consent; read allowed, write denied",
         )
     if policy == "explicit":
         if consent != "granted":

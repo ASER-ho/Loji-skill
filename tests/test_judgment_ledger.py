@@ -538,6 +538,11 @@ class AuthorizationTests(LedgerTestCase):
             ("unset", "granted", False, False, False),
             ("off", "granted", False, False, False),
             ("read_only", "granted", True, False, False),
+            ("read_only", "pending", False, False, False),
+            ("read_only", "denied", False, False, False),
+            ("read_only", "unset", False, False, False),
+            ("read_only", None, False, False, False),
+            ("read_only", "unknown", False, False, False),
             ("explicit", "granted", True, False, False),
             ("explicit", "granted", True, True, True),
             ("explicit", "pending", False, False, True),
@@ -574,6 +579,19 @@ class AuthorizationTests(LedgerTestCase):
         ):
             with self.assertRaises(jl.JudgmentAccessError):
                 jl.load_ledger(self.path, policy="auto", consent="pending")
+
+    def test_read_only_invalid_consent_does_not_open_file(self) -> None:
+        for consent in ("pending", "denied", "unset", "unknown", None):
+            with self.subTest(consent=consent):
+                with mock.patch(
+                    "scripts.memory_io.read",
+                    side_effect=AssertionError("read attempted"),
+                ) as read_mock:
+                    with self.assertRaises(jl.JudgmentAccessError):
+                        jl.load_ledger(
+                            self.path, policy="read_only", consent=consent
+                        )
+                read_mock.assert_not_called()
 
     def test_read_only_can_read_but_not_write(self) -> None:
         self.write_ledger([make_judgment()])

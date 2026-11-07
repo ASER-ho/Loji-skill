@@ -9,8 +9,13 @@ Exit codes:
     1  ledger is malformed or violates the schema
     2  ledger is missing or unreadable
 
-This command never writes the ledger and never reads it to discover the
-host memory policy; it is a maintenance tool run by the user.
+Authorization boundary:
+- Run directly by a user, this is an explicit local maintenance action on the
+  user's own file. It reads only the named path, never writes, and never
+  derives policy from the ledger.
+- An agent must not invoke this command (or read the ledger) to bypass the
+  host memory/judgment policy. Maintenance, validation, and troubleshooting
+  are not authorization. The CLI stores no permission state.
 """
 
 from __future__ import annotations
