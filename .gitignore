@@ -8,3 +8,15 @@ memory.md.bak.*
 memory.md.tmp
 memory.md.*.tmp
 memory.md.lock
+
+# 私人判断账本，不上传（judgments.template.md 模板仍需跟踪）
+JUDGMENTS.md
+JUDGMENTS.md.bak
+JUDGMENTS.md.bak.*
+JUDGMENTS.md.tmp
+JUDGMENTS.md.*.tmp
+JUDGMENTS.md.lock
+
+# Python 缓存
+__pycache__/
+*.pyc

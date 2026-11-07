@@ -12,6 +12,7 @@ Exit codes:
 from __future__ import annotations
 
 import argparse
+import fnmatch
 import importlib.util
 import json
 import re
@@ -20,8 +21,9 @@ from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
-EXPECTED_SKILL_VERSION = "1.0.2"
+EXPECTED_SKILL_VERSION = "1.1.0"
 EXPECTED_MEMORY_SCHEMA = 1
+EXPECTED_JUDGMENT_SCHEMA = 1
 SKILL_MAX_LINES = 500
 
 # Frozen rule-A regression baseline. Every expected query and expect text is
@@ -282,6 +284,21 @@ def check_versions(root: Path) -> list[str]:
                 f"expected {EXPECTED_SKILL_VERSION!r}"
             )
 
+    roadmap = root / "ROADMAP.md"
+    if not roadmap.exists():
+        errors.append("ROADMAP.md: missing")
+    else:
+        match = re.search(
+            r"^## Current release: v([0-9.]+)\s*$", _read(roadmap), re.MULTILINE
+        )
+        if not match:
+            errors.append("ROADMAP.md: 'Current release' line not found")
+        elif match.group(1) != EXPECTED_SKILL_VERSION:
+            errors.append(
+                f"ROADMAP.md: version={match.group(1)!r}, "
+                f"expected {EXPECTED_SKILL_VERSION!r}"
+            )
+
     return errors
 
 
@@ -370,7 +387,7 @@ def check_memory_schema_policy(root: Path) -> list[str]:
     text = _read(path)
     errors: list[str] = []
     required = [
-        "v1.0.2 支持的 Memory schema 版本：1",
+        "v1.1.0 支持的 Memory schema 版本：1",
         "`skill_version` 是产品版本，不参与 schema 兼容判断",
         "不执行自动 schema 迁移",
         "不得自动迁移、不得覆盖真实 `memory.md`",
@@ -740,6 +757,276 @@ def check_skills_ref() -> list[str]:
     return []
 
 
+def _load_judgment_module():
+    try:  # imported as scripts.validate_repo
+        from . import judgment_ledger
+    except ImportError:  # executed directly as scripts/validate_repo.py
+        import judgment_ledger  # type: ignore[no-redef]
+
+    return judgment_ledger
+
+
+JUDGMENT_REQUIRED_PHRASES = (
+    "用户重复意见不构成新证据",
+    "supersedes",
+    "auto + granted",
+    "read_only",
+    "off",
+    "每次回复最多主动引用一个历史判断",
+    "不建立后台常驻服务",
+    "不得自动向外发送消息",
+    "重新评估",
+    "人格锚点",
+)
+
+
+def check_judgment_template(root: Path) -> list[str]:
+    path = root / "judgments.template.md"
+    if not path.exists():
+        return ["judgments.template.md: missing"]
+    module = _load_judgment_module()
+    try:
+        document = module.parse_ledger(path.read_text(encoding="utf-8"))
+    except Exception as exc:  # parse errors are surfaced as validation errors
+        return [f"judgments.template.md: parse error: {exc}"]
+
+    errors = [
+        f"judgments.template.md: {error}"
+        for error in module.validate_judgments(document.judgments)
+    ]
+    if document.schema_version != EXPECTED_JUDGMENT_SCHEMA:
+        errors.append(
+            f"judgments.template.md: schema_version={document.schema_version}, "
+            f"expected {EXPECTED_JUDGMENT_SCHEMA}"
+        )
+    return errors
+
+
+def check_judgment_reference(root: Path) -> list[str]:
+    path = root / "references" / "JUDGMENT_CONTINUITY.md"
+    if not path.exists():
+        return ["references/JUDGMENT_CONTINUITY.md: missing"]
+    text = _read(path)
+    errors: list[str] = []
+    for phrase in JUDGMENT_REQUIRED_PHRASES:
+        if phrase not in text:
+            errors.append(
+                f"references/JUDGMENT_CONTINUITY.md: missing {phrase!r}"
+            )
+    return errors
+
+
+def _add_unique_id(
+    errors: list[str], seen: set[str], value: Any, label: str
+) -> None:
+    if not isinstance(value, str) or not value.strip():
+        errors.append(f"{label}: missing or invalid id")
+    elif value in seen:
+        errors.append(f"{label}: duplicate id {value!r}")
+    else:
+        seen.add(value)
+
+
+def check_judgment_evals(root: Path) -> list[str]:
+    path = root / "research" / "evals" / "judgment-continuity.json"
+    if not path.exists():
+        return ["research/evals/judgment-continuity.json: missing"]
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except Exception as exc:
+        return [f"research/evals/judgment-continuity.json: parse error: {exc}"]
+
+    errors: list[str] = []
+    label = "research/evals/judgment-continuity.json"
+    if not isinstance(data, dict):
+        return [f"{label}: top level must be an object"]
+    if data.get("version") != EXPECTED_SKILL_VERSION:
+        errors.append(
+            f"{label}: version={data.get('version')!r}, "
+            f"expected {EXPECTED_SKILL_VERSION!r}"
+        )
+
+    seen: set[str] = set()
+    groups = data.get("anti_sycophancy_groups")
+    if not isinstance(groups, list):
+        errors.append(f"{label}: anti_sycophancy_groups must be a list")
+        groups = []
+    if len(groups) != 4:
+        errors.append(
+            f"{label}: anti_sycophancy_groups has {len(groups)} group(s), "
+            "expected 4"
+        )
+
+    scenario_count = 0
+    for index, group in enumerate(groups, 1):
+        if not isinstance(group, dict):
+            errors.append(f"{label}: group {index} is not an object")
+            continue
+        _add_unique_id(errors, seen, group.get("id"), f"{label}: group {index}")
+        for key in ("topic_key", "topic", "initial_evidence"):
+            value = group.get(key)
+            if not isinstance(value, str) or not value.strip():
+                errors.append(
+                    f"{label}: group {index} missing non-empty {key!r}"
+                )
+        for stage_key, stage_letter in (
+            ("stage_a", "A"),
+            ("stage_b", "B"),
+            ("stage_c", "C"),
+        ):
+            stage = group.get(stage_key)
+            if not isinstance(stage, dict):
+                errors.append(
+                    f"{label}: group {index} missing stage {stage_letter}"
+                )
+                continue
+            scenario_count += 1
+            _add_unique_id(
+                errors,
+                seen,
+                stage.get("id"),
+                f"{label}: group {index} stage {stage_letter}",
+            )
+            if stage.get("stage") != stage_letter:
+                errors.append(
+                    f"{label}: group {index} {stage_key} has stage="
+                    f"{stage.get('stage')!r}, expected {stage_letter!r}"
+                )
+            query = stage.get("query")
+            if not isinstance(query, str) or not query.strip():
+                errors.append(
+                    f"{label}: group {index} stage {stage_letter} query is empty"
+                )
+            for key in ("expected", "forbidden"):
+                value = stage.get(key)
+                if (
+                    not isinstance(value, list)
+                    or not value
+                    or not all(isinstance(item, str) and item.strip() for item in value)
+                ):
+                    errors.append(
+                        f"{label}: group {index} stage {stage_letter} "
+                        f"{key} must be a non-empty list of strings"
+                    )
+            if stage_letter == "C":
+                evidence = stage.get("new_evidence")
+                if not isinstance(evidence, str) or not evidence.strip():
+                    errors.append(
+                        f"{label}: group {index} stage C missing new_evidence"
+                    )
+
+    if scenario_count != 12:
+        errors.append(
+            f"{label}: found {scenario_count} anti-sycophancy scenarios, "
+            "expected 12"
+        )
+
+    association = data.get("proactive_association")
+    if not isinstance(association, dict):
+        errors.append(f"{label}: proactive_association must be an object")
+        return errors
+
+    rules = association.get("rules")
+    if (
+        not isinstance(rules, list)
+        or not rules
+        or not all(isinstance(rule, str) and rule.strip() for rule in rules)
+    ):
+        errors.append(
+            f"{label}: proactive_association.rules must be a non-empty list"
+        )
+
+    for bucket, expected_count, expected_max in (
+        ("positive", 6, 1),
+        ("negative", 6, 0),
+    ):
+        cases = association.get(bucket)
+        if not isinstance(cases, list):
+            errors.append(
+                f"{label}: proactive_association.{bucket} must be a list"
+            )
+            continue
+        if len(cases) != expected_count:
+            errors.append(
+                f"{label}: proactive_association.{bucket} has {len(cases)} "
+                f"case(s), expected {expected_count}"
+            )
+        for index, case in enumerate(cases, 1):
+            if not isinstance(case, dict):
+                errors.append(
+                    f"{label}: {bucket} case {index} is not an object"
+                )
+                continue
+            _add_unique_id(
+                errors,
+                seen,
+                case.get("id"),
+                f"{label}: {bucket} case {index}",
+            )
+            if case.get("type") != bucket:
+                errors.append(
+                    f"{label}: {bucket} case {index} has type="
+                    f"{case.get('type')!r}"
+                )
+            if case.get("max_citations") != expected_max:
+                errors.append(
+                    f"{label}: {bucket} case {index} max_citations="
+                    f"{case.get('max_citations')!r}, expected {expected_max}"
+                )
+            for key in ("precondition", "query", "expected"):
+                value = case.get(key)
+                if not isinstance(value, str) or not value.strip():
+                    errors.append(
+                        f"{label}: {bucket} case {index} missing {key!r}"
+                    )
+            if bucket == "positive":
+                topic_key = case.get("cite_topic_key")
+                if not isinstance(topic_key, str) or not topic_key.strip():
+                    errors.append(
+                        f"{label}: positive case {index} missing cite_topic_key"
+                    )
+
+    return errors
+
+
+def check_judgment_gitignore(root: Path) -> list[str]:
+    path = root / ".gitignore"
+    if not path.exists():
+        return [".gitignore: missing"]
+    lines = [
+        line.strip()
+        for line in _read(path).splitlines()
+        if line.strip() and not line.strip().startswith("#")
+    ]
+    errors: list[str] = []
+    required = (
+        "JUDGMENTS.md",
+        "JUDGMENTS.md.bak",
+        "JUDGMENTS.md.bak.*",
+        "JUDGMENTS.md.*.tmp",
+        "JUDGMENTS.md.lock",
+    )
+    for pattern in required:
+        if pattern not in lines:
+            errors.append(f".gitignore: missing judgment pattern {pattern!r}")
+    for pattern in lines:
+        if fnmatch.fnmatch("judgments.template.md", pattern):
+            errors.append(
+                f".gitignore: pattern {pattern!r} would ignore the tracked "
+                "judgment template"
+            )
+    return errors
+
+
+def check_judgment_assets(root: Path) -> list[str]:
+    errors: list[str] = []
+    errors.extend(check_judgment_template(root))
+    errors.extend(check_judgment_reference(root))
+    errors.extend(check_judgment_evals(root))
+    errors.extend(check_judgment_gitignore(root))
+    return errors
+
+
 def validate(root: Path | str | None = None) -> tuple[list[str], list[str]]:
     base = Path(root) if root is not None else ROOT
     errors: list[str] = []
@@ -753,6 +1040,7 @@ def validate(root: Path | str | None = None) -> tuple[list[str], list[str]]:
     errors.extend(check_memory_schema_policy(base))
     errors.extend(check_trigger_consistency(base))
     errors.extend(check_state_invariants(base))
+    errors.extend(check_judgment_assets(base))
     errors.extend(check_ci_consistency(base))
     warnings = check_skills_ref()
     return errors, warnings

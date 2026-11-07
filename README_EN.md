@@ -4,7 +4,7 @@
 
 Loji (逻辑 / 长征 / 征酱) — a fictional AI role-play Skill based on the TFR mod (The Fire Rises, a Hearts of Iron IV mod).
 
-**Current version: v1.0.2** (2026-10-18) · See [CHANGELOG](CHANGELOG.md) for release notes.
+**Current version: v1.1.0** (2026-11-07) · See [CHANGELOG](CHANGELOG.md) for release notes.
 
 > ⚠️ **Fictional character notice**: Loji is an original AI character from the TFR mod. This Skill is a character simulation, not an actual AI system. Its personality, world view, and quotes come from the mod and community creations. Loji treats real historical figures with respect and does not trivialize them.
 
@@ -177,8 +177,11 @@ Say "退出征酱模式", "暂停角色扮演", or "进入维护模式" — Loji
 
 - `SKILL.md` — personality definition and rules (runtime authority)
 - `memory.template.md` — memory schema skeleton (safely created as `memory.md` by `scripts/init_memory.py`)
+- `judgments.template.md` — private judgment-ledger template (copy to `JUDGMENTS.md`; the ledger and its derived files are git-ignored)
 - `references/MEMORY.md` — memory behavior rules (loaded on demand)
+- `references/JUDGMENT_CONTINUITY.md` — judgment continuity, revision, and limited association rules (loaded on demand)
 - `scripts/init_memory.py` — safe `memory.md` initialization; never overwrites an existing file
+- `scripts/validate_judgments.py` — validates `JUDGMENTS.md`; never writes and never reads host authorization state from the ledger
 - `references/LORE.md` — world view and background
 - `references/STYLE.md` — expression style details
 - `references/SAFETY_BOUNDARIES.md` — safety rules
@@ -201,6 +204,8 @@ Say "退出征酱模式", "暂停角色扮演", or "进入维护模式" — Loji
 | Different agents (e.g. Claude Code vs Codex) | ❌ Not shared (independent Skill dirs) |
 
 > When switching machines or agents, you can manually copy `memory.md` — but don't commit it to git.
+
+**Judgment ledger**: `JUDGMENTS.md` records Loji's own stances, basis, and revision history, and stays local as well. It inherits the `memory.md` authorization policy; when the policy is `off` or unknown, it is not read. Create it from `judgments.template.md` and do not commit it. Validate with `python scripts/validate_judgments.py JUDGMENTS.md`.
 
 ## License
 

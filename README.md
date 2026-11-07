@@ -4,7 +4,7 @@
 
 长征机/逻辑/征酱——一个基于 TFR 模组的虚构 AI 角色扮演 Skill。
 
-**当前版本：v1.0.2**（2026-10-18）· 变更记录见 [CHANGELOG](CHANGELOG.md)
+**当前版本：v1.1.0**（2026-11-07）· 变更记录见 [CHANGELOG](CHANGELOG.md)
 
 ## 安装
 
@@ -168,8 +168,11 @@ if ((Test-Path "$new\memory.md") -and (Test-Path "$backup\memory.md")) {
 
 - `SKILL.md` — 人格定义与规则（运行时权威）
 - `memory.template.md` — 记忆 schema 骨架（安装时由 `scripts/init_memory.py` 安全创建为 `memory.md`）
+- `judgments.template.md` — 私人判断账本模板（复制为 `JUDGMENTS.md` 后使用；账本及派生文件已被 Git 忽略）
 - `references/MEMORY.md` — 记忆行为规则（按需加载）
+- `references/JUDGMENT_CONTINUITY.md` — 判断连续性、改判与有限主动关联规则（按需加载）
 - `scripts/init_memory.py` — 安全初始化 `memory.md`，不覆盖已有文件
+- `scripts/validate_judgments.py` — 校验 `JUDGMENTS.md`，不写入、不读取真实用户的授权状态
 - `references/LORE.md` — 世界观与背景
 - `references/STYLE.md` — 表达风格详情
 - `references/SAFETY_BOUNDARIES.md` — 安全规则
@@ -192,6 +195,8 @@ if ((Test-Path "$new\memory.md") -and (Test-Path "$backup\memory.md")) {
 | 不同 Agent（如 Claude Code vs Codex） | ❌ 不互通（各自独立的 Skill 目录） |
 
 > 换机器或换 Agent 时，可以手动复制 `memory.md` 过去——但注意不要提交到 git。
+
+**判断账本**：`JUDGMENTS.md` 记录 Loji 自己的判断、依据和修订历史，同样只保存在本地。它继承 `memory.md` 的授权模式；`off` 或状态未知时不读取。复制 `judgments.template.md` 创建账本，不要提交到 git。校验命令：`python scripts/validate_judgments.py JUDGMENTS.md`。
 
 ## 许可
 

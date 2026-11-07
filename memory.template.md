@@ -1,6 +1,6 @@
 ---
 schema_version: 1
-skill_version: "1.0.2"
+skill_version: "1.1.0"
 memory_policy: unset
 memory_consent: pending
 created_at: ""
@@ -12,6 +12,7 @@ conversation_count: 0
 
 <!-- 元数据以 YAML frontmatter 为唯一权威来源 -->
 <!-- 正文仅作人类可读的说明 -->
+<!-- 判断账本是独立私人文件：由 judgments.template.md 创建 JUDGMENTS.md，不在本文件内 -->
 
 ## 用户明确要求记住
 <!-- type: explicit, scope: permanent -->

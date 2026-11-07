@@ -352,6 +352,86 @@ jobs:
                 any("unittest discover" in error for error in errors), errors
             )
 
+    def test_roadmap_version_mismatch_fails(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "ROADMAP.md").write_text(
+                "## Current release: v1.0.2\n", encoding="utf-8"
+            )
+            errors = validate_repo.check_versions(root)
+            self.assertTrue(
+                any(
+                    "ROADMAP.md" in error and "1.0.2" in error
+                    for error in errors
+                ),
+                errors,
+            )
+
+    def test_invalid_judgment_template_fails(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "judgments.template.md").write_text(
+                "---\nschema_version: 2\n---\n", encoding="utf-8"
+            )
+            errors = validate_repo.check_judgment_template(root)
+            self.assertTrue(errors, errors)
+            self.assertTrue(
+                any("parse error" in error for error in errors), errors
+            )
+
+    def test_judgment_eval_group_count_fails(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            eval_dir = root / "research" / "evals"
+            eval_dir.mkdir(parents=True)
+            data = json.loads(
+                (
+                    ROOT / "research" / "evals" / "judgment-continuity.json"
+                ).read_text(encoding="utf-8")
+            )
+            data["anti_sycophancy_groups"] = data["anti_sycophancy_groups"][:1]
+            (eval_dir / "judgment-continuity.json").write_text(
+                json.dumps(data, ensure_ascii=False), encoding="utf-8"
+            )
+            errors = validate_repo.check_judgment_evals(root)
+            self.assertTrue(
+                any("expected 4" in error for error in errors), errors
+            )
+            self.assertTrue(
+                any("expected 12" in error for error in errors), errors
+            )
+
+    def test_judgment_gitignore_missing_pattern_fails(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / ".gitignore").write_text("memory.md\n", encoding="utf-8")
+            errors = validate_repo.check_judgment_gitignore(root)
+            self.assertTrue(
+                any("JUDGMENTS.md.lock" in error for error in errors), errors
+            )
+
+    def test_judgment_gitignore_ignoring_template_fails(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / ".gitignore").write_text(
+                "\n".join(
+                    (
+                        "JUDGMENTS.md",
+                        "JUDGMENTS.md.bak",
+                        "JUDGMENTS.md.bak.*",
+                        "JUDGMENTS.md.*.tmp",
+                        "JUDGMENTS.md.lock",
+                        "judgments.template.md",
+                    )
+                ),
+                encoding="utf-8",
+            )
+            errors = validate_repo.check_judgment_gitignore(root)
+            self.assertTrue(
+                any("tracked judgment template" in error for error in errors),
+                errors,
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

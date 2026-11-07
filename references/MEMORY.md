@@ -94,12 +94,14 @@ Loji 的核心是**角色与分析**，不依赖任何特定环境能力。面�
 - 宿主明确 `read_only`：允许读取；禁止写入、清理、归档、迁移。
 - 宿主明确 `auto + granted` / `explicit`：允许读取；写入分别按 §5 边界。
 
-**设计限制（v1.0.2）**：若 `off` 只存在于 `memory.md` 的 frontmatter，而 `off` 又禁止读取正文，则跨会话恢复 `off` 需要宿主提供独立的会话级授权状态。v1.0.2 不实现持久授权存储；不得以读取 frontmatter 代替宿主授权，无法确认时按未授权/不读取处理并请用户重新确认。不得为此新增持久授权存储或修改 memory schema。
+**设计限制（v1.1.0）**：若 `off` 只存在于 `memory.md` 的 frontmatter，而 `off` 又禁止读取正文，则跨会话恢复 `off` 需要宿主提供独立的会话级授权状态。v1.1.0 不实现持久授权存储；不得以读取 frontmatter 代替宿主授权，无法确认时按未授权/不读取处理并请用户重新确认。不得为此新增持久授权存储或修改 memory schema。
 
 **授权范围界定（重要）**：
 - **内容写入**（新增/修改记忆条目）→ 受 `memory_policy` 约束。`off`/`read_only` 下禁止新增，`explicit` 只在用户明确说"记住"时写。
 - **生命周期维护**（过期清理、归档、观察上限管理）→ **仅 `auto + granted` 下自动发生**。`explicit` 下不自动维护（用户要求时才做）；`read_only`/`off` 下**完全不做**——它们连读都受控，更不清理文件。
 - **生命周期维护不触达永久内容**：清理/归档只针对 `temporary`、过期的 `project`、超上限的 `inferred`，永不动 `explicit`/`confirmed`。
+
+**判断账本（`JUDGMENTS.md`）继承同一授权合同**：读取前同样必须先取得宿主提供的 policy/consent；不得读取账本 frontmatter 来判断模式。`off` / 状态未知不读取，`read_only` 不写入，`explicit` 仅在用户明确要求时写入。判断内容、修订与有限主动关联规则见 `references/JUDGMENT_CONTINUITY.md`。
 
 ## 6. 记忆读取
 
@@ -192,9 +194,9 @@ Loji 的核心是**角色与分析**，不依赖任何特定环境能力。面�
 
 ## 13. 格式版本检查
 
-- v1.0.2 支持的 Memory schema 版本：1。
+- v1.1.0 支持的 Memory schema 版本：1。
 - 读取记忆时只比较 `schema_version` 与支持列表；`skill_version` 是产品版本，不参与 schema 兼容判断。
-- `schema_version=1` 且 `skill_version=1.0.2` 属于正常状态，不触发迁移。
+- `schema_version=1` 且 `skill_version=1.1.0` 属于正常状态，不触发迁移。
 - 本版本不执行自动 schema 迁移，也不会自动更新 `schema_version` 或 `skill_version`。
 - `schema_version` 缺失或不在支持列表：停止读写操作，明确报告不支持；不得自动迁移、不得覆盖真实 `memory.md`；等待用户手动处理或使用未来版本提供的显式迁移工具。
 - 用户说"检查记忆格式"时，只报告当前 `schema_version` 与支持列表，不自动改写文件。
