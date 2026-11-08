@@ -128,6 +128,9 @@ class JudgmentDocumentationTests(unittest.TestCase):
         self.assertIn("judgments.template.md", text)
         self.assertIn("scripts/validate_judgments.py", text)
         self.assertIn("每次回复最多主动引用一个", text)
+        self.assertIn("置信度", text)
+        self.assertIn("普通闲聊", text)
+        self.assertIn("不读取账本正文", text)
         self.assertLessEqual(len(text.splitlines()), 500)
 
     def test_template_is_valid(self) -> None:
