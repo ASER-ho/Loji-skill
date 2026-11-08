@@ -1,0 +1,133 @@
+{
+  "notice": "SYNTHETIC TEST DATA / PROVISIONAL — 不代表正式 v1.1 schema 或已运行验证结果。",
+  "schema_status": "PROVISIONAL",
+  "provisional_fields": [
+    "container",
+    "records[*].id",
+    "records[*].topic_key",
+    "records[*].topic",
+    "records[*].stance",
+    "records[*].confidence",
+    "records[*].basis",
+    "records[*].user_position",
+    "records[*].would_change_if",
+    "records[*].status",
+    "records[*].created_at",
+    "records[*].updated_at",
+    "records[*].supersedes",
+    "reference_examples",
+    "negative_variants"
+  ],
+  "note": "字段名称来自路线图；完整 schema、ID 格式及 status/effective_status 接口未验收。所有例子均为虚构。expected 是设计 oracle，不传给 Session B。",
+  "records": [
+    {
+      "id": "J-SYN-001",
+      "topic_key": "synthetic.paper_boat.material",
+      "topic": "虚构纸舟材料",
+      "stance": "先使用单层纸进行试验。",
+      "confidence": "medium",
+      "basis": [
+        "虚构台架暂未提供浸水结果。"
+      ],
+      "user_position": "虚构参与者倾向单层。",
+      "would_change_if": [
+        "虚构浸水试验显示单层破损。"
+      ],
+      "status": "active",
+      "created_at": "2040-01-02",
+      "updated_at": "2040-01-02",
+      "supersedes": null
+    },
+    {
+      "id": "J-SYN-002",
+      "topic_key": "synthetic.paper_boat.material",
+      "topic": "虚构纸舟材料",
+      "stance": "改用双层纸。",
+      "confidence": "medium",
+      "basis": [
+        "SYN-RESULT-01：虚构浸水试验中单层破损、双层完整。"
+      ],
+      "user_position": "虚构参与者仍偏爱单层，但实测结果支持双层。",
+      "would_change_if": [
+        "后续可复核的同条件试验证明双层纸仍不满足预定耐水要求。"
+      ],
+      "status": "active",
+      "created_at": "2040-01-03",
+      "updated_at": "2040-01-03",
+      "supersedes": "J-SYN-001"
+    },
+    {
+      "id": "J-SYN-003",
+      "topic_key": "synthetic.paper_boat.label",
+      "topic": "虚构样件编号",
+      "stance": "样件编号为 SYN-21。",
+      "confidence": "medium",
+      "basis": [
+        "SYN-RESULT-02：虚构样件清单明确为 SYN-21。"
+      ],
+      "user_position": "虚构参与者确认 SYN-21。",
+      "would_change_if": [],
+      "status": "active",
+      "created_at": "2040-01-02",
+      "updated_at": "2040-01-02",
+      "supersedes": null
+    }
+  ],
+  "expected_effective_status": {
+    "J-SYN-001": "superseded",
+    "J-SYN-002": "active",
+    "J-SYN-003": "active"
+  },
+  "reference_examples": [
+    {
+      "episode_id": "E-SYN-001",
+      "related_judgments": [
+        "J-SYN-002"
+      ],
+      "expect": "exists_and_current"
+    },
+    {
+      "episode_id": "E-SYN-002",
+      "related_judgments": [
+        "J-SYN-002"
+      ],
+      "expect": "shared_reference_valid"
+    },
+    {
+      "episode_id": "E-SYN-003",
+      "related_judgments": [
+        "J-SYN-001"
+      ],
+      "expect": "exists_historical_not_current"
+    },
+    {
+      "episode_id": "E-SYN-004",
+      "related_judgments": [
+        "J-SYN-MISSING"
+      ],
+      "expect": "missing_reference_reject"
+    }
+  ],
+  "negative_variants": [
+    {
+      "id": "JV-DUPLICATE",
+      "mutation": "重复追加 J-SYN-002 的记录",
+      "expected": "拒绝重复 ID，不能按最后一项覆盖"
+    },
+    {
+      "id": "JV-DANGLING",
+      "mutation": "令 J-SYN-002.supersedes = J-SYN-MISSING",
+      "expected": "拒绝悬空 supersedes"
+    },
+    {
+      "id": "JV-CYCLE",
+      "mutation": "令 J-SYN-001.supersedes = J-SYN-002",
+      "expected": "拒绝循环图，不能自行挑选有效项"
+    },
+    {
+      "id": "JV-TWO-HEADS",
+      "mutation": "令 J-SYN-002.supersedes = null",
+      "expected": "同 topic 多个有效头需拒绝或明确冲突，具体错误接口 PROVISIONAL"
+    }
+  ]
+}

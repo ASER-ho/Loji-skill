@@ -94,7 +94,7 @@ Loji 的核心是**角色与分析**，不依赖任何特定环境能力。面�
 - 宿主明确 `read_only`：允许读取；禁止写入、清理、归档、迁移。
 - 宿主明确 `auto + granted` / `explicit`：允许读取；写入分别按 §5 边界。
 
-**设计限制（v1.1.0）**：若 `off` 只存在于 `memory.md` 的 frontmatter，而 `off` 又禁止读取正文，则跨会话恢复 `off` 需要宿主提供独立的会话级授权状态。v1.1.0 不实现持久授权存储；不得以读取 frontmatter 代替宿主授权，无法确认时按未授权/不读取处理并请用户重新确认。不得为此新增持久授权存储或修改 memory schema。
+**设计限制（v1.1.1）**：若 `off` 只存在于 `memory.md` 的 frontmatter，而 `off` 又禁止读取正文，则跨会话恢复 `off` 需要宿主提供独立的会话级授权状态。本版本不实现持久授权存储；不得以读取 frontmatter 代替宿主授权，无法确认时按未授权/不读取处理并请用户重新确认。不为此新增持久授权存储。
 
 **授权范围界定（重要）**：
 - **内容写入**（新增/修改记忆条目）→ 受 `memory_policy` 约束。`off`/`read_only` 下禁止新增，`explicit` 只在用户明确说"记住"时写。
@@ -194,12 +194,11 @@ Loji 的核心是**角色与分析**，不依赖任何特定环境能力。面�
 
 ## 13. 格式版本检查
 
-- v1.1.0 支持的 Memory schema 版本：1。
-- 读取记忆时只比较 `schema_version` 与支持列表；`skill_version` 是产品版本，不参与 schema 兼容判断。
-- `schema_version=1` 且 `skill_version=1.1.0` 属于正常状态，不触发迁移。
-- 本版本不执行自动 schema 迁移，也不会自动更新 `schema_version` 或 `skill_version`。
-- `schema_version` 缺失或不在支持列表：停止读写操作，明确报告不支持；不得自动迁移、不得覆盖真实 `memory.md`；等待用户手动处理或使用未来版本提供的显式迁移工具。
-- 用户说"检查记忆格式"时，只报告当前 `schema_version` 与支持列表，不自动改写文件。
+- v1.1.1 支持的 Memory schema 版本：1、2。schema 1 仍可按原规则读取；schema 2 启用共同经历和领域协作校准。
+- 只比较 schema_version 与支持列表；`skill_version` 是产品版本，不参与 schema 兼容判断。
+- 本版本不执行自动 schema 迁移；不得自动迁移、不得覆盖真实 `memory.md`。有用户针对本次操作的明确授权时才能使用迁移命令。
+- 缺失或不支持的 schema：明确停止读写。检查格式仅报告版本。
+- 新模板为 schema 2。迁移、Episode、校准和跨会话用法见 [共同经历与领域协作校准](EPISODIC_MEMORY.md)。
 
 ## 14. 记忆生命周期维护
 

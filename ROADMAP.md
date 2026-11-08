@@ -3,7 +3,25 @@
 This file is the repository-local contract for the current release. It is
 written to be readable without access to any maintainer-only workspace.
 
-## Current release: v1.1.0
+## Current release candidate: v1.1.1
+
+**Authorization:** L111-DEV-01. **Owner:** Codex.
+**Branch:** review/loji-1.1.1, based on a512d1acfcaa1a3ae7b78dd8abf18c1dbef4444c.
+The former v1.2 plan ships under v1.1.1; L120 identifiers are retained.
+The candidate requires L3 release approval before tagging or releasing.
+
+| ID | Scope |
+|---|---|
+| L120-01 | Explicit Memory schema 1 → 2 migration with safe IO |
+| L120-02 | Local Episodes linked to existing schema 1 Judgment IDs |
+| L120-03 | Domain calibration from verified results |
+| L120-04 | Current, authorized state across fresh sessions |
+
+See [Memory rules](references/EPISODIC_MEMORY.md) for the product contract.
+The acceptance commands below still apply. The candidate keeps the existing
+persona, forms, routes, mental models, and Judgment schema.
+
+## Released baseline: v1.1.0
 
 **Owner:** DeepSeek (v1.0.2 and v1.1.0). Only one implementation owner is
 responsible for this release.
@@ -20,7 +38,7 @@ included.
 | L110-03 | Anti-sycophancy A/B/C evals and real-host rubric | `research/evals/judgment-continuity.json`, `research/evals/JUDGMENT_RUBRIC.md`, `tests/test_judgment_evals.py` |
 | L110-04 | Limited proactive association (positive and negative cases) | `references/JUDGMENT_CONTINUITY.md`, `research/evals/judgment-continuity.json`, `tests/test_judgment_evals.py` |
 
-## Frozen behavior in this release
+## Frozen baseline behavior (v1.1.0)
 
 All v1.0.2 behavior remains frozen, including:
 
@@ -83,7 +101,7 @@ local structural check as a `skills-ref` PASS.
 - Cross-session: with authorization granted, restore a judgment across
   sessions and verify its basis; do not use real user data.
 
-## Boundaries
+## v1.1.0 release boundaries
 
 Do not add databases, servers, GUI, desktop pets, daemons, vector stores,
 additional agent runtimes, or third-party dependencies. Do not modify

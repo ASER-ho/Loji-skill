@@ -1,6 +1,6 @@
 ---
-schema_version: 1
-skill_version: "1.1.0"
+schema_version: 2
+skill_version: "1.1.1"
 memory_policy: unset
 memory_consent: pending
 created_at: ""
@@ -60,6 +60,18 @@ conversation_count: 0
     confidence: high | medium | low
     basis: [依据简述]
 -->
+
+## 共同经历
+
+```loji-episodes
+[]
+```
+
+## 协作校准
+
+```loji-calibration
+{}
+```
 
 ## 归档
 <!-- type: archived, 生命周期维护移入 -->

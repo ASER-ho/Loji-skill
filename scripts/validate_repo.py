@@ -21,8 +21,8 @@ from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
-EXPECTED_SKILL_VERSION = "1.1.0"
-EXPECTED_MEMORY_SCHEMA = 1
+EXPECTED_SKILL_VERSION = "1.1.1"
+EXPECTED_MEMORY_SCHEMA = 2
 EXPECTED_JUDGMENT_SCHEMA = 1
 SKILL_MAX_LINES = 500
 
@@ -195,7 +195,7 @@ def collect_ids(value: Any) -> list[str]:
     return ids
 
 
-def check_json_file(path: Path) -> tuple[list[str], Any | None]:
+def check_json_file(path: Path, *, case_envelope: bool = False) -> tuple[list[str], Any | None]:
     errors: list[str] = []
     try:
         text = path.read_text(encoding="utf-8")
@@ -205,7 +205,16 @@ def check_json_file(path: Path) -> tuple[list[str], Any | None]:
     except Exception as exc:  # JSON decode / encoding
         return [f"{path}: JSON parse error: {exc}"], None
 
-    ids = collect_ids(data)
+    if case_envelope:
+        # The L120 envelope reuses entity IDs across independent cases.
+        try:
+            ids = [case["id"] for group in data["groups"].values() for case in group]
+        except (AttributeError, KeyError, TypeError):
+            return [f"{path}: invalid case envelope"], data
+        if not all(isinstance(item, str) for item in ids):
+            return [f"{path}: invalid case IDs"], data
+    else:
+        ids = collect_ids(data)
     duplicates = sorted({item for item in ids if ids.count(item) > 1})
     if duplicates:
         errors.append(f"{path}: duplicate test id(s): {', '.join(duplicates)}")
@@ -215,7 +224,10 @@ def check_json_file(path: Path) -> tuple[list[str], Any | None]:
 def check_json(root: Path) -> list[str]:
     errors: list[str] = []
     for path in iter_json_files(root):
-        file_errors, _ = check_json_file(path)
+        file_errors, _ = check_json_file(
+            path, case_envelope=path.relative_to(root).as_posix()
+            == "tests/fixtures/l120/scenarios.synthetic.json",
+        )
         errors.extend(file_errors)
     return errors
 
@@ -271,6 +283,18 @@ def check_versions(root: Path) -> list[str]:
     else:
         errors.append("memory.template.md: missing")
 
+    if template.exists():
+        if __package__:
+            from . import memory_schema
+        else:
+            import memory_schema
+        try:
+            doc = memory_schema.parse(_read(template))
+            if doc.episodes or doc.calibration:
+                errors.append("memory.template.md: starter state must be empty")
+        except memory_schema.FormatError as exc:
+            errors.append(f"memory.template.md: {exc}")
+
     for path in (states, domain):
         if not path.exists():
             errors.append(f"{path.relative_to(root)}: missing")
@@ -289,7 +313,7 @@ def check_versions(root: Path) -> list[str]:
         errors.append("ROADMAP.md: missing")
     else:
         match = re.search(
-            r"^## Current release: v([0-9.]+)\s*$", _read(roadmap), re.MULTILINE
+            r"^## Current release(?: candidate)?: v([0-9.]+)\s*$", _read(roadmap), re.MULTILINE
         )
         if not match:
             errors.append("ROADMAP.md: 'Current release' line not found")
@@ -387,7 +411,7 @@ def check_memory_schema_policy(root: Path) -> list[str]:
     text = _read(path)
     errors: list[str] = []
     required = [
-        "v1.1.0 支持的 Memory schema 版本：1",
+        "v1.1.1 支持的 Memory schema 版本：1、2",
         "`skill_version` 是产品版本，不参与 schema 兼容判断",
         "不执行自动 schema 迁移",
         "不得自动迁移、不得覆盖真实 `memory.md`",

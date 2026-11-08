@@ -183,7 +183,7 @@ class MemoryIOTests(unittest.TestCase):
         )
         with mock.patch(
             "scripts.memory_io.read_version",
-            side_effect=[v0, fake],
+            side_effect=[v0, v0, fake],
         ):
             with self.assertRaises(memory_io.MemoryPostWriteVerificationError) as cm:
                 memory_io.atomic_write(self.target, "V1\n", v0)

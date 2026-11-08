@@ -1,6 +1,6 @@
 {
   "description": "Judgment continuity and limited proactive association evals for Loji-skill v1.1",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "mode": "manual_real_host",
   "notes": [
     "This file is a behavioral evaluation fixture, not a deterministic validator.",

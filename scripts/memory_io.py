@@ -27,7 +27,7 @@ import time
 from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterator
+from typing import Callable, Iterator
 
 try:  # POSIX
     import fcntl
@@ -85,12 +85,16 @@ class MemoryPostWriteVerificationError(MemoryIOError):
         intended_sha256: str,
         target_version: "MemoryVersion | None",
         recovery_required: bool,
+        published_version: "MemoryVersion | None" = None,
+        published_identity: tuple[int, int] | None = None,
     ) -> None:
         super().__init__(message)
         self.backup_path = backup_path
         self.intended_sha256 = intended_sha256
         self.target_version = target_version
         self.recovery_required = recovery_required
+        self.published_version = published_version
+        self.published_identity = published_identity
 
 
 class MemoryAlreadyExistsError(MemoryIOError):
@@ -465,7 +469,14 @@ def atomic_write(
         temp_path = _write_temp(path, payload)
 
         try:
+            published_stat = temp_path.stat()
+            published_version = version_from_bytes(payload, mtime_ns=published_stat.st_mtime_ns)
+            published_identity = (published_stat.st_dev, published_stat.st_ino)
+            _check_expected(read_version(path), current)
             os.replace(temp_path, path)
+        except (MemoryConflictError, FileNotFoundError):
+            _safe_unlink(temp_path)
+            raise
         except OSError as exc:
             _safe_unlink(temp_path)
             try:
@@ -490,6 +501,8 @@ def atomic_write(
                 intended_sha256=intended_sha256,
                 target_version=None,
                 recovery_required=True,
+                published_version=published_version,
+                published_identity=published_identity,
             ) from exc
 
         if post.sha256 != intended_sha256 or post.size != len(payload):
@@ -510,6 +523,8 @@ def atomic_write(
                 intended_sha256=intended_sha256,
                 target_version=post,
                 recovery_required=True,
+                published_version=published_version,
+                published_identity=published_identity,
             )
 
         return AtomicWriteResult(backup_path=backup_path, version=post)
@@ -521,6 +536,8 @@ def restore_backup(
     *,
     expected_target_sha256: str,
     expected_backup_sha256: str,
+    expected_target_version: MemoryVersion | None = None,
+    expected_target_identity: tuple[int, int] | None = None,
     timeout: float = DEFAULT_TIMEOUT,
 ) -> MemoryVersion:
     """Restore a verified backup only if the target still has the expected hash.
@@ -537,12 +554,21 @@ def restore_backup(
             "expected_backup_sha256 is required for restore"
         )
 
+    def check_identity() -> None:
+        if expected_target_identity is not None:
+            stat = target_path.stat()
+            if (stat.st_dev, stat.st_ino) != expected_target_identity:
+                raise MemoryConflictError("refusing restore: target identity changed")
+
     with exclusive_lock(target_path, timeout=timeout):
         try:
+            check_identity()
             current = read_version(target_path)
         except FileNotFoundError as exc:
             raise MemoryConflictError("target disappeared before restore") from exc
 
+        if expected_target_version is not None:
+            _check_expected(current, expected_target_version)
         if current.sha256 != expected_target_sha256:
             raise MemoryConflictError(
                 "refusing restore: target changed "
@@ -560,7 +586,12 @@ def restore_backup(
 
         temp_path = _write_temp(target_path, backup_data)
         try:
+            check_identity()
+            _check_expected(read_version(target_path), current)
             os.replace(temp_path, target_path)
+        except (MemoryConflictError, FileNotFoundError):
+            _safe_unlink(temp_path)
+            raise
         except OSError as exc:
             _safe_unlink(temp_path)
             raise MemoryWriteError(f"restore replace failed: {exc}") from exc
@@ -611,13 +642,26 @@ def init_memory(
     if not template_path.exists():
         raise FileNotFoundError(f"template not found: {template_path}")
 
+    return publish_new(target_path, template_path.read_bytes(), timeout=timeout)
+
+
+def publish_new(
+    target_path: Path | str,
+    data: bytes,
+    *,
+    before_publish: Callable[[], None] | None = None,
+    timeout: float = DEFAULT_TIMEOUT,
+) -> MemoryVersion:
+    """Publish verified bytes without replacing any existing target."""
+    target_path = Path(target_path)
     with exclusive_lock(target_path, timeout=timeout):
         if target_path.exists() or target_path.is_symlink():
             raise MemoryAlreadyExistsError(f"target already exists: {target_path}")
 
-        data = template_path.read_bytes()
         temp_path = _write_temp(target_path, data)
         try:
+            if before_publish is not None:
+                before_publish()
             try:
                 _exclusive_publish(temp_path, target_path)
             except FileExistsError as exc:
