@@ -8,23 +8,53 @@
 
 ## 安装
 
+Loji-skill 使用 [Agent Skills](https://agentskills.io/specification) 格式。安装位置由客户端决定，与所用的模型无关。请把整个仓库装成 `loji-skill` 目录，保留 `SKILL.md`、`references/`、`scripts/` 和其他文件的相对位置。
+
+### 1. 选择客户端的技能目录
+
+| 客户端 | 用户级技能目录（默认） |
+| --- | --- |
+| [Claude Code](https://code.claude.com/docs/en/skills) | `~/.claude/skills` |
+| [Codex](https://developers.openai.com/codex/skills) | `~/.agents/skills` |
+| [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/skill/skill-filesystem/README.md) | `~/.dsh/skills`（若设置了 `DSH_HOME`，使用其 `skills` 子目录）；启用默认技能目录时也可用 `~/.agents/skills`（或 `DSH_AGENTS_HOME` 下的 `skills`） |
+| 其他兼容 Agent Skills 的客户端 | 使用客户端文档指定的技能目录或导入入口 |
+
+下面以 Codex 的默认目录为例。使用其他客户端时，把第一行换成对应路径。若目标已装过 Loji，请先备份原有 `memory.md`，不要重新克隆覆盖；Claude Code 的旧版大写目录见下方迁移说明。
+
+macOS / Linux：
+
 ```bash
-git clone https://github.com/ASER-ho/Loji-skill.git ~/.claude/skills/loji-skill
-python ~/.claude/skills/loji-skill/scripts/init_memory.py --template ~/.claude/skills/loji-skill/memory.template.md --target ~/.claude/skills/loji-skill/memory.md
+skills_root="$HOME/.agents/skills"
+mkdir -p "$skills_root" && git clone https://github.com/ASER-ho/Loji-skill.git "$skills_root/loji-skill"
 ```
 
-Windows：
+Windows（PowerShell）：
 
 ```powershell
-git clone https://github.com/ASER-ho/Loji-skill.git $env:USERPROFILE\.claude\skills\loji-skill
-python $env:USERPROFILE\.claude\skills\loji-skill\scripts\init_memory.py --template $env:USERPROFILE\.claude\skills\loji-skill\memory.template.md --target $env:USERPROFILE\.claude\skills\loji-skill\memory.md
+$skillsRoot = Join-Path $env:USERPROFILE '.agents\skills'
+New-Item -ItemType Directory -Force -Path $skillsRoot | Out-Null
+git clone https://github.com/ASER-ho/Loji-skill.git (Join-Path $skillsRoot 'loji-skill')
 ```
 
-`init_memory.py` 只在 `memory.md` 不存在时创建；已存在时退出码 2，绝不覆盖。
+### 2. 按需初始化本地记忆
 
-`init_memory.py` 需要 Python 3.11+。若当前环境没有 Python，请停止安装并人工处理记忆文件；不要改用会覆盖已有 `memory.md` 的复制命令。
+如果需要本地记忆，并且客户端能访问该安装目录，在 `loji-skill` 目录中运行以下命令（需 Python 3.11+；macOS / Linux 上也可用 `python3`）：
+
+```sh
+python scripts/init_memory.py --template memory.template.md --target memory.md
+```
+
+脚本只在 `memory.md` 不存在时创建文件；文件已存在时退出码为 `2`，不会覆盖。暂时不用本地记忆或没有 Python，可跳过此步。
+
+### 3. 验证加载
+
+在客户端的技能列表中确认有 `loji-skill`，然后在新会话里显式调用它，或在支持自动触发的客户端里说「征酱，你好」。联网和持久记忆取决于客户端提供的工具与权限。
+
+**只有聊天界面？** 如果你的 ChatGPT、Claude、DeepSeek 或其他客户端没有技能导入入口，可以把 `SKILL.md` 和所需的 `references/` 文件作为对话上下文提供。这样可以体验角色；客户端不会因此获得自动触发或本地记忆能力。
 
 ### 从旧目录 `Loji-skill` 迁移
+
+以下步骤仅适用于 Claude Code 的旧安装目录 `~/.claude/skills/Loji-skill`。
 
 如果已经安装过旧版本，不要直接重新 clone 覆盖。以下步骤按顺序执行；任何一步失败都停止，不移动原目录。
 
@@ -137,8 +167,6 @@ if ((Test-Path "$new\memory.md") -and (Test-Path "$backup\memory.md")) {
 - Windows：两条路径都存在时脚本停止。仅大小写不同的字符串不被当作同一目录的证明；只有你独立确认后，才可把 `$SameDirectoryConfirmed` 改为 `$true` 并重跑。
 - 不自动删除旧目录；失败时保留旧目录与外部备份，按备份路径人工恢复。
 
-装完在新对话里说一句 **"征酱，你好"**——如果她用自然的语气回应你（不是普通助手的模板式回答），就说明 Skill 已生效。`// 注释` 是她的标志，但不会每次回复都出现。
-
 ## 使用
 
 对话中直接叫"征酱"即可触发。也可以说"用征酱的视角分析……"。
@@ -167,7 +195,7 @@ if ((Test-Path "$new\memory.md") -and (Test-Path "$backup\memory.md")) {
 ### 角色运行文件（Skill 生效必需）
 
 - `SKILL.md` — 人格定义与规则（运行时权威）
-- `memory.template.md` — 记忆 schema 骨架（安装时由 `scripts/init_memory.py` 安全创建为 `memory.md`）
+- `memory.template.md` — 记忆 schema 骨架（可用 `scripts/init_memory.py` 安全初始化 `memory.md`）
 - `references/MEMORY.md` — 记忆行为规则（按需加载）
 - `scripts/init_memory.py` — 安全初始化 `memory.md`，不覆盖已有文件
 - `references/LORE.md` — 世界观与背景
@@ -187,9 +215,9 @@ if ((Test-Path "$new\memory.md") -and (Test-Path "$backup\memory.md")) {
 
 | 场景 | 是否互通 |
 |------|---------|
-| 同一台机器、多个 Claude Code 窗口 | ✅ 互通（同一份 `memory.md`） |
+| 多个会话访问同一安装目录 | 共用同一个 `memory.md` |
 | 不同机器 | ❌ 不互通（各自独立的文件） |
-| 不同 Agent（如 Claude Code vs Codex） | ❌ 不互通（各自独立的 Skill 目录） |
+| 不同客户端安装在各自的目录 | 各用自己的 `memory.md`，不会自动同步 |
 
 > 换机器或换 Agent 时，可以手动复制 `memory.md` 过去——但注意不要提交到 git。
 

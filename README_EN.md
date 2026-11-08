@@ -10,23 +10,53 @@ Loji (逻辑 / 长征 / 征酱) — a fictional AI role-play Skill based on the 
 
 ## Installation
 
+Loji-skill uses the [Agent Skills](https://agentskills.io/specification) format. The installation location depends on the client, regardless of which model it runs. Install the entire repository as a folder named `loji-skill` and preserve the relative paths of `SKILL.md`, `references/`, `scripts/`, and the other files.
+
+### 1. Choose your client's skills directory
+
+| Client | Default user-level skills directory |
+| --- | --- |
+| [Claude Code](https://code.claude.com/docs/en/skills) | `~/.claude/skills` |
+| [Codex](https://developers.openai.com/codex/skills) | `~/.agents/skills` |
+| [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/skill/skill-filesystem/README.md) | `~/.dsh/skills` (or `skills` under `DSH_HOME`); with default roots enabled, `~/.agents/skills` (or `skills` under `DSH_AGENTS_HOME`) also works |
+| Other Agent Skills clients | Use the skills directory or import option documented by the client |
+
+The examples use the Codex default. For another client, change the first line to its skills path. If Loji is already installed at the destination, back up its existing `memory.md` and do not clone over the installation. See the migration steps below for the old uppercase Claude Code directory.
+
+macOS / Linux:
+
 ```bash
-git clone https://github.com/ASER-ho/Loji-skill.git ~/.claude/skills/loji-skill
-python ~/.claude/skills/loji-skill/scripts/init_memory.py --template ~/.claude/skills/loji-skill/memory.template.md --target ~/.claude/skills/loji-skill/memory.md
+skills_root="$HOME/.agents/skills"
+mkdir -p "$skills_root" && git clone https://github.com/ASER-ho/Loji-skill.git "$skills_root/loji-skill"
 ```
 
-Windows:
+Windows (PowerShell):
 
 ```powershell
-git clone https://github.com/ASER-ho/Loji-skill.git $env:USERPROFILE\.claude\skills\loji-skill
-python $env:USERPROFILE\.claude\skills\loji-skill\scripts\init_memory.py --template $env:USERPROFILE\.claude\skills\loji-skill\memory.template.md --target $env:USERPROFILE\.claude\skills\loji-skill\memory.md
+$skillsRoot = Join-Path $env:USERPROFILE '.agents\skills'
+New-Item -ItemType Directory -Force -Path $skillsRoot | Out-Null
+git clone https://github.com/ASER-ho/Loji-skill.git (Join-Path $skillsRoot 'loji-skill')
 ```
 
-`init_memory.py` creates `memory.md` only when it does not exist; if it already exists, it exits with code 2 and never overwrites it.
+### 2. Initialize local memory (optional)
 
-`init_memory.py` requires Python 3.11+. If Python is unavailable, stop and handle the memory file manually; do not fall back to a copy command that can overwrite an existing `memory.md`.
+If you want local memory and the client can access the installation directory, run this from inside `loji-skill` (Python 3.11+ is required; use `python3` if needed on macOS or Linux):
+
+```sh
+python scripts/init_memory.py --template memory.template.md --target memory.md
+```
+
+The script creates `memory.md` only if the file is missing. If the file already exists, it exits with code `2` and leaves it intact. Skip this step if you do not need local memory or do not have Python.
+
+### 3. Verify that the skill loaded
+
+Confirm that `loji-skill` appears in the client's skills list. Start a new session and invoke it explicitly, or say “Hi, Loji” in a client that supports automatic invocation. Web search and persistent memory depend on the client's tools and permissions.
+
+**Using a chat-only client?** If your ChatGPT, Claude, DeepSeek, or other client has no skill import option, provide `SKILL.md` and any relevant `references/` files as chat context. This lets you try the character without adding native skill invocation or local memory to the client.
 
 ### Migrating from the old `Loji-skill` directory
+
+These steps apply to the old Claude Code installation at `~/.claude/skills/Loji-skill`.
 
 Do not re-clone over an existing install. Run these steps in order; stop on the first failure and do not move the old directory.
 
@@ -140,8 +170,6 @@ if ((Test-Path "$new\memory.md") -and (Test-Path "$backup\memory.md")) {
 - Windows: if both paths exist, the script stops. Case-only string equality is not proof of the same directory; only after independent verification should you set `$SameDirectoryConfirmed = $true` and rerun.
 - Never auto-delete the old directory; on failure keep it and the external backup, and recover from the backup path manually.
 
-After install, open a new conversation and say **"征酱，你好"** — if she responds naturally (not like a generic assistant), the Skill is active. The `// comment` is her signature, but it doesn't appear in every reply.
-
 ## Usage
 
 Call her by name — "征酱" — in conversation to trigger the role. You can also say "用征酱的视角分析……" (analyze from Loji's perspective).
@@ -176,7 +204,7 @@ Say "退出征酱模式", "暂停角色扮演", or "进入维护模式" — Loji
 ### Runtime files (required for the Skill to work)
 
 - `SKILL.md` — personality definition and rules (runtime authority)
-- `memory.template.md` — memory schema skeleton (safely created as `memory.md` by `scripts/init_memory.py`)
+- `memory.template.md` — memory schema skeleton (use `scripts/init_memory.py` to safely initialize `memory.md`)
 - `references/MEMORY.md` — memory behavior rules (loaded on demand)
 - `scripts/init_memory.py` — safe `memory.md` initialization; never overwrites an existing file
 - `references/LORE.md` — world view and background
@@ -196,9 +224,9 @@ Say "退出征酱模式", "暂停角色扮演", or "进入维护模式" — Loji
 
 | Scenario | Shared? |
 |----------|---------|
-| Same machine, multiple Claude Code windows | ✅ Shared (same `memory.md`) |
+| Multiple sessions using the same installation | Share the same `memory.md` |
 | Different machines | ❌ Not shared (independent files) |
-| Different agents (e.g. Claude Code vs Codex) | ❌ Not shared (independent Skill dirs) |
+| Clients with separate installations | Each uses its own `memory.md`; no automatic sync |
 
 > When switching machines or agents, you can manually copy `memory.md` — but don't commit it to git.
 
