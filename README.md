@@ -4,7 +4,7 @@
 
 长征机/逻辑/征酱——一个基于 TFR 模组的虚构 AI 角色扮演 Skill。
 
-**当前候选版本：v1.1.0** · 变更记录见 [CHANGELOG](CHANGELOG.md)
+**当前版本：v1.1.0** · 变更记录见 [CHANGELOG](CHANGELOG.md)
 
 ## 安装
 
