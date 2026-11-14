@@ -48,7 +48,7 @@ def _ledger(episodes, path, policy, consent):
     return judgments, version
 
 
-def context(memory, ledger=None, *, policy, consent, domain=None, as_of=None):
+def context(memory, ledger=None, *, policy, consent, domain=None, as_of=None, matters=None):
     """Project the authorized current state; no search, write, or backup reads."""
     today = as_of or date.today().isoformat()
     schema.require(schema.valid_date(today), "invalid as-of date")
@@ -56,6 +56,10 @@ def context(memory, ledger=None, *, policy, consent, domain=None, as_of=None):
         _key(domain, "domain")
     doc, _ = _load(memory, policy, consent)
     judgments, _ = _ledger(doc.episodes, ledger, policy, consent)
+    if matters is not None:
+        schema.require(isinstance(matters, list) and all(schema.nonempty(x) for x in matters),
+                       "matters must be a list of nonempty exact matter names")
+        matters = set(matters)
     eligible = [
         ep for ep in doc.episodes
         if ep["date"] <= today and (ep["expires_on"] is None or ep["expires_on"] >= today)
@@ -76,6 +80,9 @@ def context(memory, ledger=None, *, policy, consent, domain=None, as_of=None):
                 ref for ref in ep["related_judgments"] if ref not in active_refs
             ],
         })
+    if matters is not None:
+        current = [ep for ep in current if ep["relevance"] in matters]
+        disputed &= matters
     active_ids = dict.fromkeys(ref for ep in current for ref in ep["related_judgments"])
     return {
         "episodes": current, "unresolved": sorted(disputed),
@@ -205,15 +212,23 @@ def main(argv=None):
     parser.add_argument("--policy", required=True)
     parser.add_argument("--consent", required=True)
     parser.add_argument("--domain")
+    parser.add_argument("--matters", help="context only: JSON array of exact relevance names; [] selects none")
     parser.add_argument("--as-of", help="defaults to the local calendar date")
     parser.add_argument("--user-requested", action="store_true")
     parser.add_argument("--eligible-and-private", action="store_true",
                         help="assert the host performed semantic eligibility and privacy checks")
     args = parser.parse_args(argv)
+    if args.action != "context" and args.matters is not None:
+        parser.error("--matters is only supported for context")
     auth = {"policy": args.policy, "consent": args.consent}
     try:
         if args.action == "context":
-            result = context(args.memory, args.ledger, domain=args.domain, as_of=args.as_of, **auth)
+            matters = None
+            if args.matters is not None:
+                matters = schema.decode_json(args.matters)
+                schema.require(isinstance(matters, list), "matters must be a JSON array")
+            result = context(args.memory, args.ledger, domain=args.domain, as_of=args.as_of,
+                             matters=matters, **auth)
         else:
             authorize(**auth, write=True, requested=args.user_requested)
             data = schema.decode_json(sys.stdin.buffer.read().decode("utf-8"))

@@ -220,3 +220,228 @@ class ContinuityCases(StateCase):
                 elif cid == "D08":
                     self.assertEqual(packet["unresolved"], ["虚构纸舟实验"])
                     self.assertFalse(packet["judgment_evidence"])
+
+
+class MatterScopeCases(StateCase):
+    """L112-01: exact, caller-supplied scope over fully validated state."""
+
+    def setUp(self):
+        super().setUp()
+        self.alpha = episode(dict(BASE, id="E-alpha", relevance="alpha",
+                                  related_judgments=["J-SYN-002"]))
+        self.beta = episode(dict(BASE, id="E-beta", relevance="beta",
+                                 related_judgments=["J-SYN-003"]))
+        self.conflict = episode(dict(BASE, id="E-conflict", relevance="alpha-region"),
+                                state="unresolved")
+        self.rows = [self.alpha, self.beta, self.conflict]
+        outcomes = {f"result-{i}": True for i in range(5)}
+        self.calibration = {"beta": {**schema.outcome_stats(outcomes), "outcome_ids": outcomes}}
+        self.write_state(self.rows, self.calibration)
+
+    def cli(self, *options, action="context", stdin=None):
+        return subprocess.run([
+            sys.executable, "-B", str(ROOT / "scripts/episodic_memory.py"), action,
+            "--memory", str(self.memory), "--ledger", str(self.ledger),
+            "--policy", "read_only", "--consent", "granted", "--as-of", AS_OF,
+            *options,
+        ], input=stdin, capture_output=True)
+
+    def test_no_scope_legacy_packet_and_cli(self):
+        expected = {
+            "episodes": [{**ep, "historical_judgment_ids": []} for ep in (self.alpha, self.beta)],
+            "unresolved": ["alpha-region"],
+            "judgment_evidence": {
+                key: {"stance": row["stance"], "basis": tuple(row["basis"])}
+                for key, row in (("J-SYN-002", RECORDS[1]), ("J-SYN-003", RECORDS[2]))
+            },
+            "calibration": "normal",
+        }
+        self.assertEqual(self.context(), expected)
+        self.assertEqual(self.context(matters=None), expected)
+        process = self.cli()
+        self.assertEqual(process.returncode, 0, process.stderr)
+        self.assertEqual(process.stdout.decode().splitlines(), [json.dumps(expected, ensure_ascii=True)])
+
+    def test_alpha_beta_and_growth(self):
+        selected = self.context(matters=["alpha", "alpha-region"])
+        self.assertEqual([ep["id"] for ep in selected["episodes"]], ["E-alpha"])
+        self.assertEqual(selected["unresolved"], ["alpha-region"])
+        self.assertEqual(set(selected["judgment_evidence"]), {"J-SYN-002"})
+        beta = self.context(matters=["beta"])
+        self.assertEqual([ep["id"] for ep in beta["episodes"]], ["E-beta"])
+        self.assertEqual(beta["unresolved"], [])
+        self.assertEqual(set(beta["judgment_evidence"]), {"J-SYN-003"})
+        # Exercise the applicable prototype assertions at both sample sizes.
+        for growth in (0, 44):
+            with self.subTest(growth=growth):
+                self.write_state([
+                    *self.rows,
+                    dict(self.alpha, id="E-old", state="deprecated"),
+                    dict(self.alpha, id="E-expired", retention="project", expires_on="2040-01-03"),
+                    dict(self.alpha, id="E-conflicting-active", relevance="alpha-region"),
+                    *[dict(self.beta, id=f"E-noise-{i}", relevance=f"noise-{i}",
+                           summary="unrelated " * 40) for i in range(growth)],
+                ], self.calibration)
+                before = self.snapshot()
+                scope = ["alpha", "alpha-region"]
+                # A caller's ephemeral mapping supplies names, not product storage.
+                caller_mapping = {"ALPHA": scope}
+                self.assertEqual(self.context(matters=caller_mapping["ALPHA"]), selected)
+                self.assertEqual(scope, ["alpha", "alpha-region"])
+                self.assertEqual(self.context(matters=["beta"]), beta)
+                self.assertEqual(self.context(matters=None), self.context())
+                for empty_scope in ([], ["missing"]):
+                    self.assertEqual(self.context(matters=empty_scope), {
+                        "episodes": [], "unresolved": [], "judgment_evidence": {},
+                        "calibration": "normal",
+                    })
+                self.assertEqual(self.snapshot(), before)
+
+    def test_empty_and_unmatched_scopes_still_return_calibration(self):
+        for scope in ([], ["missing"]):
+            with self.subTest(scope=scope):
+                self.assertEqual(self.context(matters=scope, domain="beta"), {
+                    "episodes": [], "unresolved": [], "judgment_evidence": {},
+                    "calibration": "high_value_signal",
+                })
+
+    def test_duplicate_matters_and_order_do_not_duplicate_or_reorder_output(self):
+        self.assertEqual(self.context(matters=["beta", "alpha", "alpha"]),
+                         self.context(matters=["alpha", "beta"]))
+        self.assertEqual(self.context(matters=["alpha"])["unresolved"], [])
+
+    def test_exact_unicode_names_without_normalization_or_topic_mapping(self):
+        name = "事项：精确 名称"
+        self.write_state([dict(self.alpha, relevance=name)])
+        self.assertEqual(len(self.context(matters=[name])["episodes"]), 1)
+        for scope in (["事项"], [name + " "], [RECORDS[1]["topic_key"]], ["ALPHA"]):
+            self.assertEqual(self.context(matters=scope)["episodes"], [])
+
+    def test_domain_only_controls_calibration(self):
+        a = self.context(matters=["alpha"], domain="beta")
+        b = self.context(matters=["alpha"], domain="unknown")
+        self.assertEqual(a["calibration"], "high_value_signal")
+        self.assertEqual(b["calibration"], "normal")
+        self.assertEqual({k: v for k, v in a.items() if k != "calibration"},
+                         {k: v for k, v in b.items() if k != "calibration"})
+        self.assertEqual(len(self.context(domain="beta")["episodes"]), 2)
+
+    def test_invalid_api_scopes(self):
+        for scope in ("alpha", {}, (), {"alpha"}, 1, False, [None], [1], [[]], [""], [" \t"]):
+            with self.subTest(scope=scope):
+                self.rejected(lambda: self.context(matters=scope), schema.FormatError)
+
+    def test_incomplete_scope_omits_related_conflict(self):
+        self.assertEqual(self.context(matters=["alpha"])["unresolved"], [])
+        self.assertEqual(self.context(matters=["alpha", "alpha-region"])["unresolved"],
+                         ["alpha-region"])
+
+    def test_in_scope_conflict_suppresses_active_same_matter(self):
+        self.write_state([*self.rows, dict(self.alpha, id="E-disputed", relevance="alpha-region")])
+        result = self.context(matters=["alpha-region"])
+        self.assertEqual(result["unresolved"], ["alpha-region"])
+        self.assertEqual(result["episodes"], [])
+        self.assertEqual(result["judgment_evidence"], {})
+
+    def test_history_corrections_and_lifecycle(self):
+        mixed = dict(self.alpha, related_judgments=["J-SYN-002", "J-SYN-001"])
+        corrected = dict(self.alpha, id="E-corrected", state="corrected")
+        correction = dict(self.alpha, id="E-correction", kind="correction_or_learning",
+                          replaces="E-corrected", summary="new corrected fact")
+        hidden = [
+            dict(self.alpha, id="E-historical", related_judgments=["J-SYN-001"]),
+            dict(self.alpha, id="E-retracted", related_judgments=["J-retracted"]),
+            dict(self.alpha, id="E-expired", retention="project", expires_on="2040-01-03"),
+            dict(self.alpha, id="E-future", date="2040-01-05"),
+            *[dict(self.alpha, id=f"E-{s}", state=s) for s in ("archived", "deprecated")],
+        ]
+        self.ledger.write_bytes(ledger_text([
+            *RECORDS, dict(RECORDS[2], id="J-retracted", topic_key="retracted", status="retracted"),
+        ]).encode())
+        self.write_state([mixed, self.beta, corrected, correction, *hidden])
+        result = self.context(matters=["alpha"])
+        self.assertEqual([ep["id"] for ep in result["episodes"]], ["E-alpha", "E-correction"])
+        self.assertEqual(result["episodes"][0]["historical_judgment_ids"], ["J-SYN-001"])
+        self.assertEqual(result["episodes"][0]["related_judgments"], ["J-SYN-002"])
+        self.assertIsNone(result["episodes"][1]["replaces"])
+        self.assertEqual(set(result["judgment_evidence"]), {"J-SYN-002"})
+        self.assertEqual(set(result["judgment_evidence"]["J-SYN-002"]), {"stance", "basis"})
+
+    def test_expiry_boundary_and_expired_or_future_conflicts(self):
+        self.write_state([
+            dict(self.alpha, retention="project", expires_on=AS_OF),
+            dict(self.conflict, relevance="alpha", retention="project", expires_on="2040-01-03"),
+            dict(self.conflict, id="E-future-conflict", relevance="alpha", date="2040-01-05"),
+        ])
+        result = self.context(matters=["alpha"])
+        self.assertEqual([ep["id"] for ep in result["episodes"]], ["E-alpha"])
+        self.assertEqual(result["unresolved"], [])
+
+    def test_unauthorized_scopes_refuse_before_any_read(self):
+        for scope in (None, [], ["missing"], ["alpha"]):
+            for auth in ({"policy": "off"}, {"policy": "unset"}, {"consent": "pending"},
+                         {"consent": "denied"}, {"consent": "invalid"}):
+                with self.subTest(scope=scope, auth=auth), patch.object(io, "read") as read, \
+                     patch.object(jl, "load_ledger") as ledger_read:
+                    self.rejected(lambda: self.context(matters=scope, **auth), PermissionError)
+                    read.assert_not_called()
+                    ledger_read.assert_not_called()
+
+    def test_out_of_scope_format_and_references_are_validated(self):
+        invalids = [dict(self.beta, related_judgments=["J-missing"]),
+                    dict(self.beta, summary=""), dict(self.beta, related_judgments=[])]
+        for bad in invalids:
+            self.write_state([self.alpha, bad])
+            for scope in ([], ["missing"], ["alpha"]):
+                with self.subTest(bad=bad, scope=scope):
+                    self.rejected(lambda: self.context(matters=scope), schema.FormatError)
+        self.write_state(self.rows)
+        for scope in ([], ["missing"], ["alpha"]):
+            self.rejected(lambda: em.context(self.memory, policy="read_only", consent="granted",
+                                            matters=scope), PermissionError)
+        self.ledger.write_bytes(ledger_text([*RECORDS, RECORDS[2]]).encode())
+        for scope in ([], ["alpha"]):
+            self.rejected(lambda: self.context(matters=scope), jl.JudgmentValidationError)
+
+    def test_cli_scopes_and_no_writes(self):
+        before = self.snapshot()
+        for scope in ([], ["missing"], ["alpha", "alpha-region"], ["beta"], ["alpha", "alpha"]):
+            with self.subTest(scope=scope):
+                process = self.cli("--matters", json.dumps(scope))
+                self.assertEqual(process.returncode, 0, process.stderr)
+                self.assertEqual(json.loads(process.stdout),
+                                 json.loads(json.dumps(self.context(matters=scope))))
+                self.assertEqual(self.snapshot(), before)
+
+    def test_cli_rejects_invalid_json_and_non_context_use(self):
+        before = self.snapshot()
+        for payload in ("null", '"alpha"', "{}", "false", "3", "[", '[NaN]',
+                        '[""]', '[" "]', "[1]", "[null]", "[[]]"):
+            with self.subTest(payload=payload):
+                process = self.cli("--matters", payload)
+                self.assertEqual(process.returncode, 1, process.stderr)
+                self.assertFalse(process.stdout)
+        self.assertEqual(self.cli("--matters").returncode, 2)
+        for action in ("add", "transition", "forget", "outcome", "forget-domain"):
+            process = self.cli("--matters", "[]", action=action, stdin=b"{}")
+            self.assertEqual(process.returncode, 2, process.stderr)
+            self.assertIn(b"only supported for context", process.stderr)
+        self.assertEqual(self.snapshot(), before)
+
+    def test_cli_empty_scope_cannot_hide_invalid_reference_or_denial(self):
+        self.write_state([self.alpha, dict(self.beta, related_judgments=["J-missing"])])
+        for scope in ("[]", '["alpha"]'):
+            result = self.cli("--matters", scope)
+            self.assertEqual(result.returncode, 1)
+            self.assertIn(b"unknown Judgment ID", result.stderr)
+            denied = self.cli("--matters", scope, "--policy", "off")
+            self.assertEqual(denied.returncode, 1)
+            self.assertNotIn(b"unknown Judgment ID", denied.stderr)
+
+    def test_authorized_empty_document(self):
+        self.write_state()
+        self.ledger.unlink()
+        for scope in (None, [], ["alpha"]):
+            self.assertEqual(self.context(matters=scope), {
+                "episodes": [], "unresolved": [], "judgment_evidence": {}, "calibration": "normal",
+            })
