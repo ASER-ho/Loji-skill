@@ -3,10 +3,10 @@
 This file is the repository-local contract for the current release. It is
 written to be readable without access to any maintainer-only workspace.
 
-## Current release candidate: v1.1.2
+## Current release: v1.1.2
 
-**Status:** FUNCTIONAL_ACCEPTANCE_PASS / RELEASE_PREPARATION_AUTHORIZED / NOT_RELEASED.
-**Authorization:** L112-RELEASE-PREP-01. **Owner:** Codex.
+**Status:** RELEASED / v1.1.2.
+**Authorization:** L112-RELEASE-01. **Owner:** Codex.
 **Branch:** implementation/loji-1.1.2-matters.
 **Accepted functional candidate:** e8ce4a4e2e8de5db53379d16a3453617a71711d2,
 based on released v1.1.1 commit a2c07cc41fe09047ccecc5c4dff747f5f920ea2f.
@@ -21,12 +21,13 @@ isolation or complete project recovery. No measured Token or cost saving ratio
 is claimed.
 
 The functional candidate passed 192 regression tests, official skills-ref 0.1.0
-and H112-01–04 native-host validation. Release preparation synchronizes versions
-and documentation, followed by regression, official validation and a minimal
-host smoke test. It does not authorize publication or Project Ledger work.
+and H112-01–04 native-host validation. Release preparation synchronized versions
+and documentation and passed regression, official validation and a minimal
+host smoke test. L112-RELEASE-01 authorizes publication after the final
+status-only checks and CI gates. It does not authorize Project Ledger work.
 Long-term project persistence A1–A4 remains NOT_RUN for future v1.2 requirements
 validation and is not a mandatory gate for this limited interface release.
-Push, merge, tag and release require separate authorization.
+This release does not authorize v1.2 implementation.
 
 See [Memory rules](references/EPISODIC_MEMORY.md) for the interface contract.
 

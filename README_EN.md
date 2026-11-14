@@ -4,9 +4,9 @@
 
 Loji (逻辑 / 长征 / 征酱) — a fictional AI role-play Skill based on the TFR mod (The Fire Rises, a Hearts of Iron IV mod).
 
-**Latest release: v1.1.1** · See [CHANGELOG](CHANGELOG.md) for release notes.
+**Latest release: v1.1.2** · See [CHANGELOG](CHANGELOG.md) for release notes.
 
-**Release preparation candidate: v1.1.2 (unreleased)**. Adds optional [exact matter filtering with `context --matters`](references/EPISODIC_MEMORY.md), with the scope explicitly supplied by the caller; omitting the parameter preserves v1.1.1 behavior. An incomplete scope may omit relevant conflicts. This does not provide automatic project identification, security isolation, or complete project recovery. Authorized source files are still read in full and existing validation remains in place; no measured Token or cost saving ratio is claimed.
+Adds optional [exact matter filtering with `context --matters`](references/EPISODIC_MEMORY.md), with the scope explicitly supplied by the caller; omitting the parameter preserves v1.1.1 behavior. An incomplete scope may omit relevant conflicts. This does not provide automatic project identification, security isolation, or complete project recovery. Authorized source files are still read in full and existing validation remains in place; no measured Token or cost saving ratio is claimed.
 
 > ⚠️ **Fictional character notice**: Loji is an original AI character from the TFR mod. This Skill is a character simulation, not an actual AI system. Its personality, world view, and quotes come from the mod and community creations. Loji treats real historical figures with respect and does not trivialize them.
 
