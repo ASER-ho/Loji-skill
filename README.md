@@ -6,6 +6,8 @@
 
 **当前发布：v1.1.1** · 变更记录见 [CHANGELOG](CHANGELOG.md)
 
+**发布准备候选：v1.1.2（未发布）**。新增可选的 [`context --matters` 精确事项筛选](references/EPISODIC_MEMORY.md)，范围由调用方显式提供；省略参数保持 v1.1.1 行为。范围不完整可能遗漏相关冲突，不实现自动项目识别、安全隔离或完整项目恢复。仍完整读取已授权源文件并执行原有校验，不宣称已测得 Token 或费用节省比例。
+
 ## 安装
 
 Loji-skill 使用 [Agent Skills](https://agentskills.io/specification) 格式。安装位置由客户端决定，与所用的模型无关。请把整个仓库装成 `loji-skill` 目录，保留 `SKILL.md`、`references/`、`scripts/` 和其他文件的相对位置。

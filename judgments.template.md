@@ -1,6 +1,6 @@
 ---
 schema_version: 1
-skill_version: "1.1.1"
+skill_version: "1.1.2"
 ---
 
 # Loji 判断账本（Judgments）

@@ -1,4 +1,4 @@
-# 共同经历与领域协作校准（v1.1.1）
+# 共同经历与领域协作校准（v1.1.2 发布准备，未发布）
 
 L120-01～04。Memory schema 2 保留原有七节，只新增两个机器可读区块。判断账本仍为 schema 1，不迁移、不回写。
 
@@ -50,7 +50,7 @@ L120-01～04。Memory schema 2 保留原有七节，只新增两个机器可读�
 
 context 不写文件，返回当前可用的 Episode、其关联判断的依据、未决事项名和指定领域的模式。它不搜索、不替宿主挑话题，也不读取私有备份。默认以宿主本地日历日期过滤，可显式指定 --as-of。读取失败时不绕过校验打开原始数据作为替代。
 
-### 可选事项范围（L112-01-IMPLEMENTATION；有限实施，未发布）
+### 可选事项范围（v1.1.2；发布准备，未发布）
 
 Python 接口为 `context(memory, ledger=None, *, policy, consent, domain=None, as_of=None, matters=None)`。
 `matters` 只接受 `None` 或非空白字符串组成的 list；该 list 表示精确事项集合，不修改输入。CLI 仅在 context 动作接受 `--matters`，其值必须是严格 JSON 数组：
@@ -77,6 +77,6 @@ Python 接口为 `context(memory, ledger=None, *, policy, consent, domain=None, 
 
 `domain` 只选择协作校准模式，`relevance` 仍是稳定事项名，`topic_key` 仍是判断修订链键；三者没有项目 ID 或自动映射合同。事项集合由调用方明确提供，**不完整范围可能遗漏相关冲突**：只传 alpha 会遗漏单独名为 alpha-region 的未决事项，不能据此宣称所有相关事项均无冲突。共享的 Judgment 依据按现有引用整体返回，不按文本再切分。
 
-此接口不实现自动项目识别、访问安全隔离、完整项目恢复或长期项目持久化，不新增项目账本、索引、摘要存储或缓存。输出字符缩短不代表已测得 Token、费用或业务成功率收益；真实宿主验证和长期持久化 A1～A4 分别验收。本次有限实施不改变 v1.1.1 发布状态，也不授权 v1.1.2 发布。
+此接口不实现自动项目识别、访问安全隔离、完整项目恢复或长期项目持久化，不新增项目账本、索引、摘要存储或缓存。输出字符缩短不代表已测得 Token、费用或业务成功率收益。L112-FINAL-GATE-01 已接受 H112-01～04 真实宿主验收；长期项目持久化 A1～A4 保持 NOT_RUN，留待未来 v1.2 需求验证，不作为本轮有限接口发布的强制前置条件。当前为 L112-RELEASE-PREP-01 发布准备候选，v1.1.2 尚未发布，正式发布仍须另行授权。
 
 同一入口接受 add / transition / forget / outcome / forget-domain；数据通过 UTF-8 JSON stdin 提供。add 输入上面的字段（state 不传，id 与 expires_on 可省略）；transition 输入 id/state；forget 输入 id；forget-domain 输入 domain；outcome 输入 domain/id/evidence/completed/disputed/hit。对 add 和 outcome，宿主确认内容可记、已核对依据且通过隐私检查后才传 --eligible-and-private。explicit 下每项写入、以及任何模式下维护类操作，均须确认这次用户指令才传 --user-requested。没有独立授权、ledger 不可读、引用无效或写冲突时停止并如实报告。

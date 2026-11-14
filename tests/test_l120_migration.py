@@ -53,7 +53,7 @@ class MigrationCases(unittest.TestCase):
         end = expected.index("## 归档".encode())
         newline = "\r\n" if b"\r\n" in expected else "\n"
         expected = (expected[:start] + schema.render_sections([], {}, newline).encode() +
-                    expected[end:]).replace(b'"1.2.0"', b'"1.1.1"', 1)
+                    expected[end:]).replace(b'"1.2.0"', b'"1.1.2"', 1)
         self.assertEqual(self.target.read_bytes(), expected)
         doc = schema.parse(self.target.read_bytes().decode())
         self.assertEqual((doc.version, doc.episodes, doc.calibration), (2, [], {}))
@@ -232,7 +232,7 @@ class MigrationCases(unittest.TestCase):
                 right = doc.sections[schema.CALIBRATION][2]
                 restored = (doc.text[:left] + doc.text[right:]).replace(
                     "schema_version: 2", "schema_version: 1", 1
-                ).replace('"1.1.1"', '"1.0.1"', 1)
+                ).replace('"1.1.2"', '"1.0.1"', 1)
                 self.assertEqual(restored.encode(), data)
                 self.target.unlink()
 

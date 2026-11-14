@@ -16,7 +16,7 @@
       "锁定军服"
     ],
     "references/STATE_MACHINES.md": [
-      "版本对应：Loji-skill v1.1.1",
+      "版本对应：Loji-skill v1.1.2",
       "auto / explicit / read_only / off",
       "read_only",
       "off",

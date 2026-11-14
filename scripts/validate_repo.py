@@ -21,7 +21,7 @@ from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
-EXPECTED_SKILL_VERSION = "1.1.1"
+EXPECTED_SKILL_VERSION = "1.1.2"
 EXPECTED_MEMORY_SCHEMA = 2
 EXPECTED_JUDGMENT_SCHEMA = 1
 SKILL_MAX_LINES = 500
@@ -411,7 +411,7 @@ def check_memory_schema_policy(root: Path) -> list[str]:
     text = _read(path)
     errors: list[str] = []
     required = [
-        "v1.1.1 支持的 Memory schema 版本：1、2",
+        "v1.1.2 支持的 Memory schema 版本：1、2",
         "`skill_version` 是产品版本，不参与 schema 兼容判断",
         "不执行自动 schema 迁移",
         "不得自动迁移、不得覆盖真实 `memory.md`",

@@ -3,12 +3,38 @@
 This file is the repository-local contract for the current release. It is
 written to be readable without access to any maintainer-only workspace.
 
-## Current release candidate: v1.1.1
+## Current release candidate: v1.1.2
+
+**Status:** FUNCTIONAL_ACCEPTANCE_PASS / RELEASE_PREPARATION_AUTHORIZED / NOT_RELEASED.
+**Authorization:** L112-RELEASE-PREP-01. **Owner:** Codex.
+**Branch:** implementation/loji-1.1.2-matters.
+**Accepted functional candidate:** e8ce4a4e2e8de5db53379d16a3453617a71711d2,
+based on released v1.1.1 commit a2c07cc41fe09047ccecc5c4dff747f5f920ea2f.
+
+The only new feature is optional, caller-supplied exact matter filtering in
+`context` / `--matters`. Omitting the scope preserves v1.1.1 behavior; an empty
+or unmatched scope does not fall back to all matters. Authorization, full source
+reads, validation, historical references and lifecycle rules remain unchanged.
+Memory schema stays at 2 and Judgment schema at 1. An incomplete scope can omit
+relevant conflicts; this is not automatic project identification, security
+isolation or complete project recovery. No measured Token or cost saving ratio
+is claimed.
+
+The functional candidate passed 192 regression tests, official skills-ref 0.1.0
+and H112-01–04 native-host validation. Release preparation synchronizes versions
+and documentation, followed by regression, official validation and a minimal
+host smoke test. It does not authorize publication or Project Ledger work.
+Long-term project persistence A1–A4 remains NOT_RUN for future v1.2 requirements
+validation and is not a mandatory gate for this limited interface release.
+Push, merge, tag and release require separate authorization.
+
+See [Memory rules](references/EPISODIC_MEMORY.md) for the interface contract.
+
+## Released baseline: v1.1.1
 
 **Authorization:** L111-DEV-01. **Owner:** Codex.
-**Branch:** review/loji-1.1.1, based on a512d1acfcaa1a3ae7b78dd8abf18c1dbef4444c.
-The former v1.2 plan ships under v1.1.1; L120 identifiers are retained.
-The candidate requires L3 release approval before tagging or releasing.
+**Released commit:** a2c07cc41fe09047ccecc5c4dff747f5f920ea2f (tag v1.1.1).
+The former v1.2 plan shipped under v1.1.1; L120 identifiers are retained.
 
 | ID | Scope |
 |---|---|
@@ -18,8 +44,8 @@ The candidate requires L3 release approval before tagging or releasing.
 | L120-04 | Current, authorized state across fresh sessions |
 
 See [Memory rules](references/EPISODIC_MEMORY.md) for the product contract.
-The acceptance commands below still apply. The candidate keeps the existing
-persona, forms, routes, mental models, and Judgment schema.
+The acceptance commands below still apply. v1.1.1 kept the existing persona,
+forms, routes, mental models, and Judgment schema.
 
 ## Released baseline: v1.1.0
 
