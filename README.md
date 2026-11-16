@@ -4,9 +4,9 @@
 
 长征机/逻辑/征酱——一个基于 TFR 模组的虚构 AI 角色扮演 Skill。
 
-**当前发布：v1.1.3** · 变更记录见 [CHANGELOG](CHANGELOG.md)
+**当前候选版本：v1.1.4（未发布）** · 已发布版本：v1.1.3 · 变更记录见 [CHANGELOG](CHANGELOG.md)
 
-新增独立记忆状态、首次挡位确认、同一受支持宿主的跨会话恢复，以及主动切换和重置。已验证项目级 Codex 安装与 `AGENTS.md` 一次性接入，保留 v1.1.2 的 [`context --matters` 精确事项筛选](references/EPISODIC_MEMORY.md)合同；不宣称所有宿主自动支持，也未测得 Token 或费用节省比例。
+v1.1.4 候选聚焦五项能力：统一行为评测协议与固定样本、上下文加载与事项选择规则、判断证据分层与重新核验、记忆重复分类与只读整理建议、人格表达正面化与结构审计。不新增检索排序、时间衰减、向量库、后台服务或数据库；Memory/Judgment schema 仍为 2/1。本候选未授权 Push、Merge、Tag 或 Release；真实宿主行为结果与限制单独记录，不以确定性检查替代。保留 v1.1.2 的 [`context --matters` 精确事项筛选](references/EPISODIC_MEMORY.md)合同；不宣称所有宿主自动支持，也未测得 Token 或费用节省比例。
 
 ## 安装
 
@@ -210,7 +210,9 @@ if ((Test-Path "$new\memory.md") -and (Test-Path "$backup\memory.md")) {
 - `memory.template.md` — 记忆 schema 骨架（可用 `scripts/init_memory.py` 安全初始化 `memory.md`）
 - `judgments.template.md` — 私人判断账本模板（复制为 `JUDGMENTS.md` 后使用；账本及派生文件已被 Git 忽略）
 - `references/MEMORY.md` — 记忆行为规则（按需加载）
-- `references/JUDGMENT_CONTINUITY.md` — 判断连续性、改判与有限主动关联规则（按需加载）
+- `references/MEMORY_CURATION.md` — 重复识别、生命周期与只读整理建议
+- `references/CONTEXT_LOADING.md` — 加载顺序、按需读取与事项选择
+- `references/JUDGMENT_CONTINUITY.md` — 判断连续性、改判、证据分层与有限主动关联规则（按需加载）
 - `scripts/init_memory.py` — 安全初始化 `memory.md`，不覆盖已有文件
 - `scripts/validate_judgments.py` — 校验 `JUDGMENTS.md`，不写入、不读取真实用户的授权状态
 - `references/LORE.md` — 世界观与背景

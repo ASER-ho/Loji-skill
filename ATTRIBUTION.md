@@ -63,6 +63,35 @@ Hearts of Iron IV 及其模组平台由 Paradox Interactive 拥有。本仓库�
 - **社区二创部分**：商用需联系原创作个体，本仓库不授予其使用权
 - **推荐做法**：个人学习、角色扮演、非商业用途可直接使用；商业用途请先核对上述边界，必要时联系相关权利方
 
+## 机制参考与许可记录（v1.1.4）
+
+v1.1.4 只吸收机制思想并自行实现，没有复制任何上游代码、提示词或大段原文。下表记录实际参考的来源、许可证与本轮处置；星数、README 宣传和未复现的 benchmark 不作为复用依据。
+
+| 来源 | 许可证 | 本轮使用 | 处置 |
+|---|---|---|---|
+| `IAAR-Shanghai/Awesome-AI-Memory` | Apache-2.0（以 LICENSE 文件为准） | 证据门禁：引用、来源、阅读范围 | 改写为中文规则；未复制代码或文本 |
+| `vectorize-io/hindsight` | MIT | 依据失效后的重新核验与撤回思路 | 只借概念；未复制代码 |
+| `tigerless-labs/agent-memory` | MIT | 重复分类、会话边界整理与"只提案"思路 | 只借概念；未引入 SQLite 或后台进程 |
+| `agenmod/immortal-skill` | MIT | 证据三级：逐字/产物/印象 | 改写为 `basis` 可选前缀 |
+| `Summer907/possession-skill` | MIT | 角色保真度场景的组织方式 | 重写为 Loji 场景；未复制题目文本 |
+| `alchaincyf/freud-skill` | MIT | 用正面定义替代纯否定规则的方法 | 重写本仓库规则；未复制文本 |
+| `volcengine/OpenViking` | **AGPL-3.0** | 同身份才合并、冲突不覆盖、保留原子事实 | **只借思想，未引入任何代码或受限文本** |
+| `Agent Workbench`（用户自有项目） | 未声明为上游依赖 | Claim / Evidence / Verification / Verdict 记录模型 | 改写为评测记录格式；未引入其代码 |
+| `Capability Router`（用户自有笔记） | 未声明为上游依赖 | 分层加载与薄路由思路 | 改写为加载规则；未引入代码 |
+| `agiresearch/A-mem` | MIT | MemoryNote 字段与链接召回 | 本轮评估后未采用 |
+| `A1batr055/Drivesoid` | CC BY-NC-SA 4.0（2.1.0+） | 状态衰减/习惯化 | **本轮未采用；未复制代码或常量** |
+| `TencentCloud/TencentDB-Agent-Memory` | MIT（API 标注 NOASSERTION） | JEV 变更分类 | 本轮评估后未采用 |
+| `acnlabs/OpenPersona` | MIT | 演化上下界与检索分层 | 本轮评估后未采用 |
+| `NirDiamant/Agent_Memory_Techniques` | Apache-2.0 | Recall@K、遗忘曲线等评测词汇 | 只使用通用词汇，未搬运 notebook 代码 |
+
+许可证核对：2026-11-16 使用已认证的 `gh` CLI 读取各仓库 `LICENSE`。`A1batr055/Drivesoid` 与 `TencentCloud/TencentDB-Agent-Memory` 的 GitHub API 返回 `NOASSERTION`，已人工读取 LICENSE 正文，分别为 CC BY-NC-SA 4.0 与 MIT。本轮未复制任何来源的代码、提示词或大段文本；如未来复制，必须按对应许可证补充版权声明与 NOTICE。
+
+统一规则：
+
+- MIT / Apache-2.0 来源只借机制；如未来引入其代码或大段文本，必须保留对应版权声明与 NOTICE。
+- AGPL-3.0、CC BY-NC-SA 等不兼容来源只允许借鉴思想，不复制代码或受限文本。
+- 不把第三方角色的人格、身份或政治立场写入 Loji 的固定设定。
+
 ## 引用级清单（部分）
 
 本仓库对 TFR 内容的引用分布在以下文件，均以 `[TFR canon]` 标签标注：

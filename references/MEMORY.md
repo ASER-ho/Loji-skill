@@ -113,7 +113,7 @@ memory_policy 仅 auto/explicit/read_only/off；confirmed 必须为布尔值。�
 
 **切换与重置**：当前用户明确更改优先写状态，即使原挡位 off/read_only 也可执行独立状态配置（须有宿主 state_write 能力），不借此初始化或修改正文。reset 仅原子保存 off/confirmed=false，不删除正文；下一次需重新确认。状态缺失（包括旧版正文存在）、损坏、非法或未确认时均无授权，不从旧正文/备份恢复、不默认 auto、不迁移真实数据。保存失败时暂停本会话旧授权；明确告知这次选择尚未完成持久化，新会话可能仍恢复旧保存状态，不能宣称暂停已跨会话生效。CLI 宿主须在后续调用中保留该暂停/当前禁止，直到成功保存或用户明确解决，不能重新调用 CLI 就沿用旧 auto。
 
-**每次操作与并发**：状态入口在 memory.state.json.transaction.lock 内重新读取状态、判定权限，并持锁完成整个正文操作；配置同样先取该锁，再调用既有 memory_io 的 state 文件锁、版本核对、备份、同目录临时写入、原子发布/替换与回读验证。锁顺序固定为状态事务 → 状态文件/正文既有事务；不在 access 内调用 set/reset 或嵌套 access。先完成的正文事务可早于等待中的切换；切换成功后新的操作不能沿用旧授权。协作锁不阻止绕过它的外部程序，不能宣称 OS 沙箱或恶意路径替换防护。状态文件、transaction.lock、.lock、.bak.*、.*.tmp 全部不提交；不可自动恢复备份为授权。
+**每次操作与并发**：状态入口在 memory.state.json.transaction.lock 内重新读取状态、判定权限，并持锁完成整个正文操作；配置同样先取该锁，再调用既有 memory_io 的 state 文件锁、版本核对、备份、同目录临时写入、原子发布/替换与回读验证。锁顺序固定为状态事务 → 状态文件/正文既有事务；不在 access 内调用 set/reset 或嵌套 access。先完成的正文事务可早于等待中的切换；切换成功后新的操作不能沿用旧授权。同一已授权操作事务内已取得并核对的结果可以复用，不为同一目的重复读取；但不得跨操作缓存授权，也不得在锁外先读正文“检查”。协作锁不阻止绕过它的外部程序，不能宣称 OS 沙箱或恶意路径替换防护。状态文件、transaction.lock、.lock、.bak.*、.*.tmp 全部不提交；不可自动恢复备份为授权。
 
 **实际接口**：`scripts/memory_state.py` 提供 status/set/reset/read-memory/judgments/context/mutate。CLI 每次由可信宿主传入固定 `--memory-dir`；`--accept-saved --state-read --state-write --body-read --body-write` 仅表示宿主能力，不选择挡位。set 的 `--policy` 必须对应本轮用户明确选择并带 `--user-confirmed`，reset 须 `--user-requested`。status 返回 saved、实际可读/可写及 needs_setup；错误退出 2。context 保留 domain/as-of/matters 原语义；mutate 使用原有 Episode 操作、资格/隐私检查及 `--user-requested`。正文初始化、Judgment 写入或其他旧 API 必须在 Python `with state.access(write=..., user_requested=...) as auth:` 中调用，并用 auth.body_args()，不能缓存授权、直接绕过状态入口或把有效值注入下一会话。禁止在锁外先读正文“检查”。
 
@@ -135,6 +135,7 @@ memory_policy 仅 auto/explicit/read_only/off；confirmed 必须为布尔值。�
 - 文件不存在或为空——正常打招呼
 - 文件有内容——在首轮回复中自然提及，不逐条复述
 - 无法确认授权状态或宿主能力——不假定可读/可写，诚实说明
+- 加载顺序、按需读取和事项选择见 `CONTEXT_LOADING.md`：普通问答不读取私人数据；同一操作内不重复读取已经取得并核对的结果
 
 ## 7. 记忆写入
 
@@ -217,7 +218,7 @@ memory_policy 仅 auto/explicit/read_only/off；confirmed 必须为布尔值。�
 
 ## 13. 格式版本检查
 
-- v1.1.3 支持的 Memory schema 版本：1、2。schema 1 仍可按原规则读取；schema 2 启用共同经历和领域协作校准。
+- v1.1.4 支持的 Memory schema 版本：1、2。schema 1 仍可按原规则读取；schema 2 启用共同经历和领域协作校准。
 - 只比较 schema_version 与支持列表；`skill_version` 是产品版本，不参与 schema 兼容判断。
 - 本版本不执行自动 schema 迁移；不得自动迁移、不得覆盖真实 `memory.md`。有用户针对本次操作的明确授权时才能使用迁移命令。
 - 缺失或不支持的 schema：明确停止读写。检查格式仅报告版本。
@@ -260,3 +261,4 @@ memory_policy 仅 auto/explicit/read_only/off；confirmed 必须为布尔值。�
 - 清理/归档只针对 `temporary`、过期的 `project`、超上限的 `inferred`——**永不动 `explicit`、`confirmed` 和用户明确要求保留的内容**（除非用户自己要求）
 - 任何清理动作都要在记忆里留下痕迹（`清理于 YYYY-MM-DD`），并在当轮对话中一句带过（"清理了几条过期的近期上下文"），不静默操作
 - 归档是记忆的"冷藏"，删除是最后的"消亡"——优先归档，不轻易删除
+- 重复识别、合并边界和只读整理建议见 `MEMORY_CURATION.md`；默认只提出建议和差异，不自动合并或删除，实际修改仍走本文件的授权、生命周期和事务规则

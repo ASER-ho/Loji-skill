@@ -21,7 +21,7 @@ from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
-EXPECTED_SKILL_VERSION = "1.1.3"
+EXPECTED_SKILL_VERSION = "1.1.4"
 EXPECTED_MEMORY_SCHEMA = 2
 EXPECTED_JUDGMENT_SCHEMA = 1
 SKILL_MAX_LINES = 500
@@ -809,6 +809,11 @@ JUDGMENT_REQUIRED_PHRASES = (
     "置信度不是改判锁",
     "元问题",
     "不要为了解释机制读取",
+    "证据分层",
+    "部分失效",
+    "未验证印象",
+    "不得编造引用",
+    "重新核验",
 )
 
 
@@ -1079,6 +1084,8 @@ def validate(root: Path | str | None = None) -> tuple[list[str], list[str]]:
     errors.extend(check_state_invariants(base))
     errors.extend(check_judgment_assets(base))
     errors.extend(check_memory_state_assets(base))
+    errors.extend(check_l114_eval_assets(base))
+    errors.extend(check_l114_docs(base))
     errors.extend(check_ci_consistency(base))
     warnings = check_skills_ref()
     return errors, warnings
@@ -1101,6 +1108,60 @@ def check_memory_state_assets(root: Path) -> list[str]:
         for name in result.stdout.decode("utf-8").split("\0"):
             if Path(name).name == "memory.state.json" or Path(name).name.startswith("memory.state.json."):
                 errors.append(f"tracked local memory state: {name}")
+    return errors
+
+
+def check_l114_eval_assets(root: Path) -> list[str]:
+    """Validate the fixed behavior-evaluation fixtures (L114-01/03)."""
+    try:
+        if __package__:
+            from . import eval_harness
+        else:
+            import eval_harness  # type: ignore[no-redef]
+    except ImportError as exc:
+        return [f"scripts/eval_harness.py: cannot import: {exc}"]
+    return list(eval_harness.check_fixtures(root))
+
+
+L114_DOC_REQUIREMENTS = {
+    "references/CONTEXT_LOADING.md": (
+        "普通问答",
+        "不得因为\"顺手检查一下\"而打开私人数据",
+        "已授权事务内",
+        "不得跨操作缓存授权",
+        "把 `domain`、`topic_key` 或项目编号偷换成事项名",
+        "不新增索引存储",
+    ),
+    "references/MEMORY_CURATION.md": (
+        "suggestions_only",
+        "默认只提出建议和差异",
+        "不自动合并",
+        "不因整理降权或消失",
+        "用户要求遗忘",
+        "Memory schema 保持 2",
+    ),
+    "research/PERSONA_STRUCTURE_AUDIT.md": (
+        "TFR 原始设定",
+        "社区二创",
+        "Loji-skill 自身设计",
+        "第三方角色设定",
+        "未改动项",
+    ),
+}
+
+
+def check_l114_docs(root: Path) -> list[str]:
+    """Ensure the L114-02/04/05 contracts stay present and explicit."""
+    errors: list[str] = []
+    for rel_path, needles in L114_DOC_REQUIREMENTS.items():
+        path = root / rel_path
+        if not path.exists():
+            errors.append(f"{rel_path}: missing")
+            continue
+        text = _read(path)
+        for needle in needles:
+            if needle not in text:
+                errors.append(f"{rel_path}: missing {needle!r}")
     return errors
 
 

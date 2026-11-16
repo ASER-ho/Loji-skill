@@ -68,8 +68,8 @@ class Runner:
                 shutil.copyfile(source, dest)
                 self.manifest[name] = hashlib.sha256(source.read_bytes()).hexdigest()
         save(self.out / "installed-manifest.json", self.manifest)
-        (self.synthetic / "memory.md").write_text(fresh_memory().replace('skill_version: "1.1.3"',
-            'skill_version: "1.1.2"'), encoding="utf-8")
+        (self.synthetic / "memory.md").write_text(fresh_memory().replace(
+            f'skill_version: "{schema.SKILL_VERSION}"', 'skill_version: "1.1.2"'), encoding="utf-8")
         (self.synthetic / "JUDGMENTS.md").write_text(ledger_text(RECORDS), encoding="utf-8")
         data = episode(GROUPS["episode_integrity"][0]["input"]["episodes"][0])
         data.pop("state")

@@ -60,6 +60,7 @@ MAX_BASIS = 5
 MIN_BASIS = 1
 MAX_WOULD_CHANGE_IF = 3
 MAX_TOPIC_KEY_LENGTH = 128
+BASIS_TAGS = ("直接证据", "来源观点", "可核查产物", "未验证印象")
 
 ID_RE = re.compile(r"^J-[A-Za-z0-9][A-Za-z0-9._-]{0,63}$")
 DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
@@ -493,6 +494,15 @@ def validate_judgments(judgments: Iterable[Judgment]) -> list[str]:
         for index, basis in enumerate(item.basis):
             if not _nonempty(basis):
                 errors.append(f"{label}: basis[{index}] must be non-empty")
+                continue
+            for tag in BASIS_TAGS:
+                if basis.startswith(tag + "：") or basis.startswith(tag + ":"):
+                    if not basis[len(tag) + 1 :].strip():
+                        errors.append(
+                            f"{label}: basis[{index}] has an empty evidence tier "
+                            f"after {tag!r}"
+                        )
+                    break
 
         if len(item.would_change_if) > MAX_WOULD_CHANGE_IF:
             errors.append(

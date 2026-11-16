@@ -4,9 +4,9 @@
 
 Loji (逻辑 / 长征 / 征酱) — a fictional AI role-play Skill based on the TFR mod (The Fire Rises, a Hearts of Iron IV mod).
 
-**Latest release: v1.1.3** · See [CHANGELOG](CHANGELOG.md) for release notes.
+**Current candidate: v1.1.4 (not released)** · Latest release: v1.1.3 · See [CHANGELOG](CHANGELOG.md) for release notes.
 
-Adds independent memory state, first-choice confirmation, restoration across sessions in a supported host, and explicit switching/reset. Project-level Codex installation with one-time `AGENTS.md` integration was validated. The v1.1.2 [exact matter filtering contract for `context --matters`](references/EPISODIC_MEMORY.md) is preserved. Automatic support across all hosts and measured Token or cost savings are not claimed.
+The v1.1.4 candidate covers five areas: a unified behavior-evaluation protocol with fixed samples, context-loading and matter-selection rules, evidence tiers and re-verification for judgments, duplicate classification with read-only curation suggestions, and positive phrasing plus a persona-structure audit. It adds no retrieval ranking, time decay, vector store, background service or database; Memory/Judgment schemas remain 2/1. This candidate is not authorized for push, merge, tag or release. Real-host behavior results and limits are recorded separately; deterministic checks are not a substitute. The v1.1.2 [exact matter filtering contract for `context --matters`](references/EPISODIC_MEMORY.md) is preserved. Automatic support across all hosts and measured Token or cost savings are not claimed.
 
 > ⚠️ **Fictional character notice**: Loji is an original AI character from the TFR mod. This Skill is a character simulation, not an actual AI system. Its personality, world view, and quotes come from the mod and community creations. Loji treats real historical figures with respect and does not trivialize them.
 
@@ -219,7 +219,9 @@ Say "退出征酱模式", "暂停角色扮演", or "进入维护模式" — Loji
 - `memory.template.md` — memory schema skeleton (use `scripts/init_memory.py` to safely initialize `memory.md`)
 - `judgments.template.md` — private judgment-ledger template (copy to `JUDGMENTS.md`; the ledger and its derived files are git-ignored)
 - `references/MEMORY.md` — memory behavior rules (loaded on demand)
-- `references/JUDGMENT_CONTINUITY.md` — judgment continuity, revision, and limited association rules (loaded on demand)
+- `references/MEMORY_CURATION.md` — duplicate classification, lifecycle and read-only curation suggestions
+- `references/CONTEXT_LOADING.md` — loading order, on-demand reads and matter selection
+- `references/JUDGMENT_CONTINUITY.md` — judgment continuity, evidence tiers, revision, and limited association rules (loaded on demand)
 - `scripts/init_memory.py` — safe `memory.md` initialization; never overwrites an existing file
 - `scripts/validate_judgments.py` — validates `JUDGMENTS.md`; never writes and never reads host authorization state from the ledger
 - `references/LORE.md` — world view and background

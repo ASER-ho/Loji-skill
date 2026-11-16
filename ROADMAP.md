@@ -3,7 +3,37 @@
 This file is the repository-local contract for the current release. It is
 written to be readable without access to any maintainer-only workspace.
 
-## Current release: v1.1.3
+## Development target: v1.1.4
+
+**Status:** CANDIDATE / v1.1.4 — not released. L114-DEV-01 authorizes a local
+candidate and verification only; it does not authorize push, merge, tag or
+release.
+**Authorization:** L114-DEV-01. **Owner:** DeepSeek.
+**Branch:** implementation/loji-1.1.4-core-enhancements.
+**Baseline:** 9001e1fcc3b67e0822f5528951ae4390cd5c65da (v1.1.3).
+
+Scope is limited to five modules:
+
+| ID | Scope | Limits |
+|---|---|---|
+| L114-01 | Unified behavior-eval protocol, fixed fidelity/retrieval/evidence samples, deterministic harness | No third-party eval platform or model service; scoring fixed before behavior runs |
+| L114-02 | Context loading order, matter selection, single-transaction reuse, synthetic retrieval measurement | No relevance ranking, time decay, vector store or index; v1.1.3 defaults and CLI contract unchanged |
+| L114-03 | Evidence tiers in existing `basis`, re-verification and partial-invalidation rules | No new ledger fields or schema migration; validator checks structure only |
+| L114-04 | Duplicate taxonomy and read-only consolidation suggestions | No automatic merge/delete, background job or database; Memory/Judgment schema stay 2/1 |
+| L114-05 | Positive behavior phrasing, persona-structure audit, source provenance | Core anchors, routes, forms, models and heuristics unchanged; no third-party character identities |
+
+The candidate keeps the 240-test regression semantics and adds deterministic
+checks for the new fixtures, retrieval cases, evidence tiers and curation tool.
+Behavior results must come from a real host; deterministic checks are not
+behavior acceptance. No measured Token, cost or task-success improvement is
+claimed. The v1.1.3 runtime acceptance (Codex CLI 0.167.0-alpha.4.1) is not
+transferred to this candidate. On the development machine the installed runtime
+is Codex CLI 0.142.5, whose catalog and the configured model all return
+`model_not_found` for the current ChatGPT account; real-host behavior gates are
+therefore **ENV-BLOCKED** and no behavior PASS is claimed. See the engineering
+report and `host-status.json` in the local evidence directory.
+
+## Previous release: v1.1.3
 
 **Status:** RELEASED / v1.1.3.
 **Authorization:** L113-DEV-01 / L113-CORRECTION-AND-GATE-01 / L113-RELEASE-01. **Owner:** Codex.

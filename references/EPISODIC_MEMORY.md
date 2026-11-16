@@ -83,6 +83,27 @@ Python 接口为 `context(memory, ledger=None, *, policy, consent, domain=None, 
 
 同一入口接受 add / transition / forget / outcome / forget-domain；数据通过 UTF-8 JSON stdin 提供。add 输入上面的字段（state 不传，id 与 expires_on 可省略）；transition 输入 id/state；forget 输入 id；forget-domain 输入 domain；outcome 输入 domain/id/evidence/completed/disputed/hit。对 add 和 outcome，宿主确认内容可记、已核对依据且通过隐私检查后才传 --eligible-and-private。explicit 下每项写入、以及任何模式下维护类操作，均须确认这次用户指令才传 --user-requested。没有独立授权、ledger 不可读、引用无效或写冲突时停止并如实报告。
 
+### 事项选择规则（v1.1.4）
+
+- 事项名只能来自调用方明确提供的 `matters`，其依据可以是已授权的稳定 `relevance` 名称、当前任务和用户提供的证据。
+- `domain` 只选择领域校准模式，`topic_key` 只标识判断修订链；两者都不是事项名，也不得偷换成项目 ID。
+- 范围不完整时明确说明本次只检查了哪些事项，不能因为没有查到某条冲突就宣称冲突不存在。
+- 不确定完整范围时，先检查与当前任务直接相关、已授权的相邻事项名；仍不能确定时请求澄清，不猜测、不全盘扫描、不自动建立项目映射。
+- 一次操作内已经取得并核对的结果可以复用；不得跨操作缓存授权，也不得把上一轮读取结果当作当前授权依据。详见 `CONTEXT_LOADING.md`。
+
+### 检索评估与排序（v1.1.4）
+
+在固定合成样本 `research/evals/memory-retrieval-cases.json`（12 个对照用例）上，现行精确筛选的结果为：期望经历召回率 1.0、无关经历返回 0、禁止返回 0，覆盖多事项、过期、未来、未决冲突、纠正、归档、历史判断引用和无关经历增长。确定性结果由 `python scripts/eval_harness.py deterministic` 重放。
+
+本轮**没有**新增相关度排序、时间衰减、向量检索、索引或紧凑视图：
+
+- `matters` 是精确匹配，没有可排序的部分匹配信号；按日期重排的对照测量不改变返回集合，因此排序不会改变召回或精度。
+- 紧凑投影会丢失 `summary`、`outcome`、`related_judgments` 和 `judgment_evidence.basis`，而当前合同要求判断依据与历史引用，因此不采用。
+- 时间衰减和向量/索引系统不在授权范围，也没有在固定样本上证明收益。
+- 默认行为和 CLI 合同保持不变；输出字符数不等于 Token、费用或任务成功率收益。
+
+该结果只是确定性证据；真实宿主中的人格与任务行为仍需单独评测。
+
 ## v1.1.3 授权入口
 
 跨会话状态通过 `MEMORY.md` §5.1 的独立状态入口恢复，每次 context/经历操作前持锁重读并与宿主限制取交集。不改变本文件事项筛选、生命周期、判断引用、分类或校准语义。

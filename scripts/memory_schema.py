@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from datetime import date
 from typing import Any
 
-SKILL_VERSION = "1.1.3"
+SKILL_VERSION = "1.1.4"
 SECTIONS = (
     "用户明确要求记住", "稳定偏好", "近期上下文", "用户纠正过的内容",
     "Loji 的观察", "归档", "不应记录",
