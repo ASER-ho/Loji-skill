@@ -3,11 +3,12 @@
 This file is the repository-local contract for the current release. It is
 written to be readable without access to any maintainer-only workspace.
 
-## Development target: v1.1.3
+## Current release: v1.1.3
 
-**Status:** ENGINEERING AND TESTED CODEX HOST GATES PASSED / UNRELEASED; final review pending.
-**Authorization:** L113-DEV-01 / L113-CORRECTION-AND-GATE-01. **Owner:** Codex.
+**Status:** RELEASED / v1.1.3.
+**Authorization:** L113-DEV-01 / L113-CORRECTION-AND-GATE-01 / L113-RELEASE-01. **Owner:** Codex.
 **Branch:** implementation/loji-1.1.3-memory-state.
+**Accepted functional candidate:** b92e1c74d81a7eee1f63491ebede1060bf5b7681.
 **Released baseline:** cff04c7574c2668ad3c543506bf79d905f03364c (v1.1.2).
 
 Scope: installation-scoped memory.state.json, first-choice confirmation,
@@ -18,21 +19,24 @@ permissions on its own. A host must supply the trusted configured directory,
 acceptance and tool capabilities. No automatic private-memory migration.
 
 No Project Ledger, v1.1.4 retrieval ranking, consolidation or personality
-evolution. No Push, Merge, Tag or Release is authorized by this development.
-Automated and native-host evidence must be reviewed before release approval;
-no untested host is claimed supported. The initial environment failures are
+evolution. L113-RELEASE-01 accepts final review and authorizes publication after
+the fixed release commit passes the required local and remote CI checks.
+No untested host is claimed supported. The initial environment failures are
 preserved in the evidence. The verified existing standalone Win32 Codex CLI
 0.167.0-alpha.4.1 and native app-server, using gpt-6.1-sol, passed the synthetic
 preflight and H113-01–07 across independent sessions. Ordinary project setup
 was tested through the documented one-time AGENTS.md workflow, without
 injecting a saved policy or previous conversation into restoration prompts.
-The 240-test regression retains all original 192 tests. Official skills-ref,
-strict validation and complete-patch replay are required in the final evidence.
-These technical results do not authorize publication or imply support for
-all Codex clients, Claude Code or DSH. See references/CODEX_SETUP.md and
+The 240-test regression retains all original 192 tests. Official skills-ref
+0.1.0, strict validation and complete-patch replay passed final acceptance.
+These results do not imply support for user-level installations,
+all Codex clients, Claude Code or DSH. A pure Skill does not provide OS-level
+isolation or general host permission grants. Failed saves suspend the current
+session's old authorization; other sessions may still see the old saved state.
+See references/CODEX_SETUP.md and
 references/MEMORY.md §5.1 for support limits and the trust contract.
 
-## Current release: v1.1.2
+## Previous release: v1.1.2
 
 **Status:** RELEASED / v1.1.2.
 **Authorization:** L112-RELEASE-01. **Owner:** Codex.
@@ -54,8 +58,13 @@ and H112-01–04 native-host validation. Release preparation synchronized versio
 and documentation and passed regression, official validation and a minimal
 host smoke test. L112-RELEASE-01 authorizes publication after the final
 status-only checks and CI gates. It does not authorize Project Ledger work.
-Long-term project persistence A1–A4 remains NOT_RUN for future v1.2 requirements
-validation and is not a mandatory gate for this limited interface release.
+At the v1.1.2 release, long-term project persistence A1–A4 was NOT_RUN and was
+not a mandatory gate for that limited interface release. Subsequent
+LOJI-L130-DISCOVERY-01 was partially accepted: A1, A2 and A4 PASS; A3 PARTIAL.
+Original A3 recovered facts but did not autonomously use matter filtering;
+the explicit-scope control does not upgrade that result. The historical
+preparation isolation deviation remains part of the partial acceptance.
+These results do not establish that adding a Project Ledger is necessary.
 This release does not authorize v1.2 implementation.
 
 See [Memory rules](references/EPISODIC_MEMORY.md) for the interface contract.

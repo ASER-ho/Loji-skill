@@ -4,9 +4,9 @@
 
 Loji (逻辑 / 长征 / 征酱) — a fictional AI role-play Skill based on the TFR mod (The Fire Rises, a Hearts of Iron IV mod).
 
-**Latest release: v1.1.2** · See [CHANGELOG](CHANGELOG.md) for release notes.
+**Latest release: v1.1.3** · See [CHANGELOG](CHANGELOG.md) for release notes.
 
-Adds optional [exact matter filtering with `context --matters`](references/EPISODIC_MEMORY.md), with the scope explicitly supplied by the caller; omitting the parameter preserves v1.1.1 behavior. An incomplete scope may omit relevant conflicts. This does not provide automatic project identification, security isolation, or complete project recovery. Authorized source files are still read in full and existing validation remains in place; no measured Token or cost saving ratio is claimed.
+Adds independent memory state, first-choice confirmation, restoration across sessions in a supported host, and explicit switching/reset. Project-level Codex installation with one-time `AGENTS.md` integration was validated. The v1.1.2 [exact matter filtering contract for `context --matters`](references/EPISODIC_MEMORY.md) is preserved. Automatic support across all hosts and measured Token or cost savings are not claimed.
 
 > ⚠️ **Fictional character notice**: Loji is an original AI character from the TFR mod. This Skill is a character simulation, not an actual AI system. Its personality, world view, and quotes come from the mod and community creations. Loji treats real historical figures with respect and does not trivialize them.
 
@@ -40,11 +40,15 @@ New-Item -ItemType Directory -Force -Path $skills | Out-Null
 git clone https://github.com/ASER-ho/Loji-skill.git $skills\loji-skill
 ```
 
-**Development target: v1.1.3 (L113-DEV-01 / L113-CORRECTION-AND-GATE-01, unreleased; H113-01–07 passed on the tested Codex host, final review pending).** A separate memory.state.json stores the selected policy and confirmation. First activation answers the question before asking for a policy. A host that accepts the configured installation scope can restore a valid confirmed choice in later sessions. off never reads bodies; read_only never writes bodies; explicit requires a specific write request. Switching/resetting changes state only, and reset keeps memory intact. A fixed trusted host directory and restoration contract are required; an arbitrary workspace file is not trusted. Every body operation refreshes state under a cooperative transaction lock. Host restrictions always apply. See [the interface contract](references/MEMORY.md). No Project Ledger, retrieval ranking, consolidation or personality evolution is included; publication is not authorized.
+**Validated project-level Codex setup:** for a new installation, run `git clone https://github.com/ASER-ho/Loji-skill.git .agents/skills/loji-skill` from the project root, then start a new session in that project. Do not overwrite an existing installation or copy private bodies or state.
+
+**Memory State Continuity (v1.1.3, L113-RELEASE-01).** A separate memory.state.json stores the four policies and confirmation. First activation answers the question before asking for a policy, without defaulting to auto. A host that accepts the configured installation scope can restore a valid confirmed choice in later sessions. off never reads bodies; read_only never writes bodies; explicit requires a specific write request. Switching/resetting changes state only, without deleting or automatically migrating memory bodies. A fixed trusted host directory and restoration contract are required; an arbitrary workspace file is not trusted. Every body operation refreshes state under a cooperative transaction lock and intersects it with current host restrictions. Missing, damaged or unconfirmed state denies body access. See [the interface contract](references/MEMORY.md). No Project Ledger, retrieval ranking, consolidation or personality evolution is included.
 
 For normal Codex use, follow the [one-time setup workflow](references/CODEX_SETUP.md): explicitly confirm the memory directory and restoration permission, then let the agent add the configuration to the host-accepted project AGENTS.md. Later sessions do not need a CLI command sequence or the policy repeated. This requires host configuration and file capabilities.
 
 This gate tested the project-level `.agents/skills/loji-skill` installation and project configuration workflow. Cross-session setup for the user-level installation above was not separately tested; these results do not imply automatic support across all Codex interfaces. See the setup document for the exact scope.
+
+Claude Code, DSH and other hosts have not completed this version's acceptance. A pure Skill provides neither OS isolation nor general host permission grants. A failed state save suspends the current session's old authorization; other sessions are not guaranteed to have restored the new choice. Do not directly commit local integration configuration containing private absolute paths to a public repository; see the setup document.
 
 ### 2. Initialize local memory (optional)
 

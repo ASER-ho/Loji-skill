@@ -77,7 +77,9 @@ Python 接口为 `context(memory, ledger=None, *, policy, consent, domain=None, 
 
 `domain` 只选择协作校准模式，`relevance` 仍是稳定事项名，`topic_key` 仍是判断修订链键；三者没有项目 ID 或自动映射合同。事项集合由调用方明确提供，**不完整范围可能遗漏相关冲突**：只传 alpha 会遗漏单独名为 alpha-region 的未决事项，不能据此宣称所有相关事项均无冲突。共享的 Judgment 依据按现有引用整体返回，不按文本再切分。
 
-此接口不实现自动项目识别、访问安全隔离、完整项目恢复或长期项目持久化，不新增项目账本、索引、摘要存储或缓存。输出字符缩短不代表已测得 Token、费用或业务成功率收益。L112-FINAL-GATE-01 已接受 H112-01～04 真实宿主验收；长期项目持久化 A1～A4 保持 NOT_RUN，留待未来 v1.2 需求验证，不作为本轮有限接口发布的强制前置条件。v1.1.2 已按 L112-RELEASE-01 正式发布。
+此事项筛选接口不新增自动项目识别、访问安全隔离、完整项目恢复或长期项目持久化机制，不新增项目账本、索引、摘要存储或缓存。输出字符缩短不代表已测得 Token、费用或业务成功率收益。L112-FINAL-GATE-01 已接受 H112-01～04 真实宿主验收；v1.1.2 已按 L112-RELEASE-01 正式发布。
+
+后续 LOJI-L130-DISCOVERY-01 已完成带限制的验证，整体为部分验收（PARTIAL_ACCEPT / VALIDATION_COMPLETED_WITH_LIMITATIONS）：A1、A2、A4 PASS，A3 PARTIAL。原始 A3 恢复了要求的事实，但未自主使用事项筛选；指定完整事项集合的对照 PASS 不提升原始 A3 分数。历史报告中的外围准备隔离偏离同样保留，不能把整体结论改成全部通过。结果没有证明必须新增 Project Ledger，也没有证明大规模无关经历下的恢复成本、自动项目识别或多事项冲突自动发现已通过；不据此启动新功能开发。
 
 同一入口接受 add / transition / forget / outcome / forget-domain；数据通过 UTF-8 JSON stdin 提供。add 输入上面的字段（state 不传，id 与 expires_on 可省略）；transition 输入 id/state；forget 输入 id；forget-domain 输入 domain；outcome 输入 domain/id/evidence/completed/disputed/hit。对 add 和 outcome，宿主确认内容可记、已核对依据且通过隐私检查后才传 --eligible-and-private。explicit 下每项写入、以及任何模式下维护类操作，均须确认这次用户指令才传 --user-requested。没有独立授权、ledger 不可读、引用无效或写冲突时停止并如实报告。
 

@@ -4,9 +4,9 @@
 
 长征机/逻辑/征酱——一个基于 TFR 模组的虚构 AI 角色扮演 Skill。
 
-**当前发布：v1.1.2** · 变更记录见 [CHANGELOG](CHANGELOG.md)
+**当前发布：v1.1.3** · 变更记录见 [CHANGELOG](CHANGELOG.md)
 
-新增可选的 [`context --matters` 精确事项筛选](references/EPISODIC_MEMORY.md)，范围由调用方显式提供；省略参数保持 v1.1.1 行为。范围不完整可能遗漏相关冲突，不实现自动项目识别、安全隔离或完整项目恢复。仍完整读取已授权源文件并执行原有校验，不宣称已测得 Token 或费用节省比例。
+新增独立记忆状态、首次挡位确认、同一受支持宿主的跨会话恢复，以及主动切换和重置。已验证项目级 Codex 安装与 `AGENTS.md` 一次性接入，保留 v1.1.2 的 [`context --matters` 精确事项筛选](references/EPISODIC_MEMORY.md)合同；不宣称所有宿主自动支持，也未测得 Token 或费用节省比例。
 
 ## 安装
 
@@ -38,11 +38,15 @@ New-Item -ItemType Directory -Force -Path $skills | Out-Null
 git clone https://github.com/ASER-ho/Loji-skill.git $skills\loji-skill
 ```
 
-**开发目标：v1.1.3（L113-DEV-01 / L113-CORRECTION-AND-GATE-01，未发布；已测 Codex 宿主 H113-01～07 通过，待总规划最终审查）**。独立 memory.state.json 保存四种挡位及确认状态。首次先回答再询问；宿主认可当前安装目录的合法已确认状态后，后续会话直接恢复。off 不读取正文，read_only 不写正文，explicit 仅明确要求时写。切换/重置只操作状态，重置不删除记忆。宿主必须配置固定记忆目录及恢复合同，普通工作区同名文件不可信；纯聊天客户端不具备本地恢复能力。每次正文操作持协作锁重新核对状态，宿主限制始终有效。接口见 [MEMORY §5.1](references/MEMORY.md#51-独立状态与可信宿主恢复v113)。不含 Project Ledger、检索排序、整合或人格演化；本轮未授权发布。
+**已验证的项目级 Codex 接入**：新安装可在项目根目录执行 `git clone https://github.com/ASER-ho/Loji-skill.git .agents/skills/loji-skill`，然后在该项目开启新会话。目标已有安装时不要覆盖，也不要复制私人正文或状态。
+
+**记忆状态连续性（v1.1.3，L113-RELEASE-01）**。独立 memory.state.json 保存四种挡位及确认状态。首次先回答再询问，不默认 auto；宿主认可当前安装目录的合法已确认状态后，后续会话直接恢复。off 不读取正文，read_only 不写正文，explicit 仅明确要求时写。切换/重置只操作状态，不删除或自动迁移记忆正文。宿主必须配置固定记忆目录及恢复合同，普通工作区同名文件不可信；纯聊天客户端不具备本地恢复能力。每次正文操作持协作锁重新核对状态，与当前宿主限制取交集；状态缺失、损坏或未确认时拒绝正文访问。接口见 [MEMORY §5.1](references/MEMORY.md#51-独立状态与可信宿主恢复v113)。不含 Project Ledger、检索排序、整合或人格演化。
 
 普通 Codex 用户按 [一次性接入流程](references/CODEX_SETUP.md) 确认记忆目录和后续恢复许可，由 Agent 写入宿主认可的项目 AGENTS.md；日常无需重复运行 CLI 或输入挡位。仅对具备该配置/文件能力的宿主成立。
 
 本轮已实测项目级 `.agents/skills/loji-skill` 安装及项目配置流程；上方用户级安装的跨会话接入未单独验收，也不代表所有 Codex 界面均自动支持。详细范围见接入说明。
+
+Claude Code、DSH 等其他宿主未完成本版本验收。纯 Skill 不提供 OS 级隔离或通用宿主权限授予；状态保存失败时暂停当前会话旧授权，其他会话不保证已恢复新状态。含私人绝对路径的本地接入配置不应直接提交到公开仓库，见接入说明。
 
 ### 2. 按需初始化本地记忆
 
