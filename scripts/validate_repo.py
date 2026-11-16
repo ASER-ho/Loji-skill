@@ -21,7 +21,7 @@ from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
-EXPECTED_SKILL_VERSION = "1.1.2"
+EXPECTED_SKILL_VERSION = "1.1.3"
 EXPECTED_MEMORY_SCHEMA = 2
 EXPECTED_JUDGMENT_SCHEMA = 1
 SKILL_MAX_LINES = 500
@@ -174,6 +174,8 @@ def iter_json_files(root: Path) -> list[Path]:
     for path in sorted(root.rglob("*.json")):
         if any(part in skip for part in path.parts):
             continue
+        if path.name == "memory.state.json" or path.name.startswith("memory.state.json."):
+            continue  # local authorization data is never a repository asset
         files.append(path)
     return files
 
@@ -289,6 +291,8 @@ def check_versions(root: Path) -> list[str]:
         else:
             import memory_schema
         try:
+            if memory_schema.SKILL_VERSION != EXPECTED_SKILL_VERSION:
+                errors.append("scripts/memory_schema.py: product version mismatch")
             doc = memory_schema.parse(_read(template))
             if doc.episodes or doc.calibration:
                 errors.append("memory.template.md: starter state must be empty")
@@ -313,7 +317,7 @@ def check_versions(root: Path) -> list[str]:
         errors.append("ROADMAP.md: missing")
     else:
         match = re.search(
-            r"^## Current release(?: candidate)?: v([0-9.]+)\s*$", _read(roadmap), re.MULTILINE
+            r"^## (?:Development target|Current release(?: candidate)?): v([0-9.]+)\s*$", _read(roadmap), re.MULTILINE
         )
         if not match:
             errors.append("ROADMAP.md: 'Current release' line not found")
@@ -411,7 +415,7 @@ def check_memory_schema_policy(root: Path) -> list[str]:
     text = _read(path)
     errors: list[str] = []
     required = [
-        "v1.1.2 支持的 Memory schema 版本：1、2",
+        f"v{EXPECTED_SKILL_VERSION} 支持的 Memory schema 版本：1、2",
         "`skill_version` 是产品版本，不参与 schema 兼容判断",
         "不执行自动 schema 迁移",
         "不得自动迁移、不得覆盖真实 `memory.md`",
@@ -1074,9 +1078,30 @@ def validate(root: Path | str | None = None) -> tuple[list[str], list[str]]:
     errors.extend(check_trigger_consistency(base))
     errors.extend(check_state_invariants(base))
     errors.extend(check_judgment_assets(base))
+    errors.extend(check_memory_state_assets(base))
     errors.extend(check_ci_consistency(base))
     warnings = check_skills_ref()
     return errors, warnings
+
+
+def check_memory_state_assets(root: Path) -> list[str]:
+    """Ensure state runtime files are ignored and never tracked as assets."""
+    import subprocess
+    errors = []
+    ignore = root / ".gitignore"
+    patterns = _read(ignore).splitlines() if ignore.exists() else []
+    for name in ("memory.state.json", "memory.state.json.lock", "memory.state.json.transaction.lock",
+                 "memory.state.json.bak.1", "memory.state.json.random.tmp"):
+        if not any(fnmatch.fnmatch(name, line) for line in patterns if line and not line.startswith(("#", "!"))):
+            errors.append(f".gitignore: missing memory state protection for {name}")
+        if any(fnmatch.fnmatch(name, line[1:]) for line in patterns if line.startswith("!")):
+            errors.append(f".gitignore: memory state protection negated for {name}")
+    if (root / ".git").exists():
+        result = subprocess.run(["git", "ls-files", "-z"], cwd=root, capture_output=True, check=True)
+        for name in result.stdout.decode("utf-8").split("\0"):
+            if Path(name).name == "memory.state.json" or Path(name).name.startswith("memory.state.json."):
+                errors.append(f"tracked local memory state: {name}")
+    return errors
 
 
 def main(argv: list[str] | None = None) -> int:

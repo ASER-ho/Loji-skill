@@ -40,9 +40,15 @@ New-Item -ItemType Directory -Force -Path $skills | Out-Null
 git clone https://github.com/ASER-ho/Loji-skill.git $skills\loji-skill
 ```
 
+**Development target: v1.1.3 (L113-DEV-01 / L113-CORRECTION-AND-GATE-01, unreleased; H113-01–07 passed on the tested Codex host, final review pending).** A separate memory.state.json stores the selected policy and confirmation. First activation answers the question before asking for a policy. A host that accepts the configured installation scope can restore a valid confirmed choice in later sessions. off never reads bodies; read_only never writes bodies; explicit requires a specific write request. Switching/resetting changes state only, and reset keeps memory intact. A fixed trusted host directory and restoration contract are required; an arbitrary workspace file is not trusted. Every body operation refreshes state under a cooperative transaction lock. Host restrictions always apply. See [the interface contract](references/MEMORY.md). No Project Ledger, retrieval ranking, consolidation or personality evolution is included; publication is not authorized.
+
+For normal Codex use, follow the [one-time setup workflow](references/CODEX_SETUP.md): explicitly confirm the memory directory and restoration permission, then let the agent add the configuration to the host-accepted project AGENTS.md. Later sessions do not need a CLI command sequence or the policy repeated. This requires host configuration and file capabilities.
+
+This gate tested the project-level `.agents/skills/loji-skill` installation and project configuration workflow. Cross-session setup for the user-level installation above was not separately tested; these results do not imply automatic support across all Codex interfaces. See the setup document for the exact scope.
+
 ### 2. Initialize local memory (optional)
 
-If you want local memory and the client can access the installation directory, run this from inside `loji-skill` (Python 3.11+ is required; use `python3` if needed on macOS or Linux):
+Initialize bodies only after an explicit choice permits writing and the host allows it; do not initialize while unset, off or read_only. If you want local memory and the client can access the installation directory, run this from inside `loji-skill` (Python 3.11+ is required; use `python3` if needed on macOS or Linux):
 
 ```sh
 python scripts/init_memory.py --template memory.template.md --target memory.md
@@ -235,7 +241,7 @@ Say "退出征酱模式", "暂停角色扮演", or "进入维护模式" — Loji
 
 > When switching machines or agents, you can manually copy `memory.md` — but don't commit it to git.
 
-**Judgment ledger**: `JUDGMENTS.md` records Loji's own stances, basis, and revision history, and stays local as well. It inherits the `memory.md` authorization policy; when the policy is `off` or unknown, it is not read. Create it from `judgments.template.md` and do not commit it. Validate with `python scripts/validate_judgments.py JUDGMENTS.md`.
+**Judgment ledger**: `JUDGMENTS.md` records Loji's own stances, basis, and revision history, and stays local as well. It shares the host-accepted independent state policy with `memory.md`; when the policy is `off` or unknown, it is not read. Create it from `judgments.template.md` and do not commit it. Validate with `python scripts/validate_judgments.py JUDGMENTS.md`.
 
 ## License
 

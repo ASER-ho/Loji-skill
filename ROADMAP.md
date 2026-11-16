@@ -3,6 +3,35 @@
 This file is the repository-local contract for the current release. It is
 written to be readable without access to any maintainer-only workspace.
 
+## Development target: v1.1.3
+
+**Status:** ENGINEERING AND TESTED CODEX HOST GATES PASSED / UNRELEASED; final review pending.
+**Authorization:** L113-DEV-01 / L113-CORRECTION-AND-GATE-01. **Owner:** Codex.
+**Branch:** implementation/loji-1.1.3-memory-state.
+**Released baseline:** cff04c7574c2668ad3c543506bf79d905f03364c (v1.1.2).
+
+Scope: installation-scoped memory.state.json, first-choice confirmation,
+host-accepted cross-session restoration, explicit switching/reset, safe failure
+and cooperative concurrency. The two state fields are memory_policy and
+confirmed. Memory/Judgment schemas remain 2/1. Saved state never grants host
+permissions on its own. A host must supply the trusted configured directory,
+acceptance and tool capabilities. No automatic private-memory migration.
+
+No Project Ledger, v1.1.4 retrieval ranking, consolidation or personality
+evolution. No Push, Merge, Tag or Release is authorized by this development.
+Automated and native-host evidence must be reviewed before release approval;
+no untested host is claimed supported. The initial environment failures are
+preserved in the evidence. The verified existing standalone Win32 Codex CLI
+0.167.0-alpha.4.1 and native app-server, using gpt-6.1-sol, passed the synthetic
+preflight and H113-01–07 across independent sessions. Ordinary project setup
+was tested through the documented one-time AGENTS.md workflow, without
+injecting a saved policy or previous conversation into restoration prompts.
+The 240-test regression retains all original 192 tests. Official skills-ref,
+strict validation and complete-patch replay are required in the final evidence.
+These technical results do not authorize publication or imply support for
+all Codex clients, Claude Code or DSH. See references/CODEX_SETUP.md and
+references/MEMORY.md §5.1 for support limits and the trust contract.
+
 ## Current release: v1.1.2
 
 **Status:** RELEASED / v1.1.2.

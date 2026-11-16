@@ -20,3 +20,7 @@ JUDGMENTS.md.lock
 # Python 缓存
 __pycache__/
 *.pyc
+
+# 安装范围记忆状态及全部本地派生文件
+memory.state.json
+memory.state.json.*

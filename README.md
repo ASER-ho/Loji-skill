@@ -38,9 +38,15 @@ New-Item -ItemType Directory -Force -Path $skills | Out-Null
 git clone https://github.com/ASER-ho/Loji-skill.git $skills\loji-skill
 ```
 
+**开发目标：v1.1.3（L113-DEV-01 / L113-CORRECTION-AND-GATE-01，未发布；已测 Codex 宿主 H113-01～07 通过，待总规划最终审查）**。独立 memory.state.json 保存四种挡位及确认状态。首次先回答再询问；宿主认可当前安装目录的合法已确认状态后，后续会话直接恢复。off 不读取正文，read_only 不写正文，explicit 仅明确要求时写。切换/重置只操作状态，重置不删除记忆。宿主必须配置固定记忆目录及恢复合同，普通工作区同名文件不可信；纯聊天客户端不具备本地恢复能力。每次正文操作持协作锁重新核对状态，宿主限制始终有效。接口见 [MEMORY §5.1](references/MEMORY.md#51-独立状态与可信宿主恢复v113)。不含 Project Ledger、检索排序、整合或人格演化；本轮未授权发布。
+
+普通 Codex 用户按 [一次性接入流程](references/CODEX_SETUP.md) 确认记忆目录和后续恢复许可，由 Agent 写入宿主认可的项目 AGENTS.md；日常无需重复运行 CLI 或输入挡位。仅对具备该配置/文件能力的宿主成立。
+
+本轮已实测项目级 `.agents/skills/loji-skill` 安装及项目配置流程；上方用户级安装的跨会话接入未单独验收，也不代表所有 Codex 界面均自动支持。详细范围见接入说明。
+
 ### 2. 按需初始化本地记忆
 
-如果需要本地记忆，并且客户端能访问该安装目录，在 `loji-skill` 目录中运行以下命令（需 Python 3.11+；macOS / Linux 上也可用 `python3`）：
+仅在用户已明确选择允许写入的挡位并且宿主许可后初始化正文；未选择、off 或 read_only 时不执行初始化。如果需要本地记忆，并且客户端能访问该安装目录，在 `loji-skill` 目录中运行以下命令（需 Python 3.11+；macOS / Linux 上也可用 `python3`）：
 
 ```sh
 python scripts/init_memory.py --template memory.template.md --target memory.md
@@ -226,7 +232,7 @@ if ((Test-Path "$new\memory.md") -and (Test-Path "$backup\memory.md")) {
 
 > 换机器或换 Agent 时，可以手动复制 `memory.md` 过去——但注意不要提交到 git。
 
-**判断账本**：`JUDGMENTS.md` 记录 Loji 自己的判断、依据和修订历史，同样只保存在本地。它继承 `memory.md` 的授权模式；`off` 或状态未知时不读取。复制 `judgments.template.md` 创建账本，不要提交到 git。校验命令：`python scripts/validate_judgments.py JUDGMENTS.md`。
+**判断账本**：`JUDGMENTS.md` 记录 Loji 自己的判断、依据和修订历史，同样只保存在本地。它与 `memory.md` 继承同一宿主认可的独立状态授权；`off` 或状态未知时不读取。复制 `judgments.template.md` 创建账本，不要提交到 git。校验命令：`python scripts/validate_judgments.py JUDGMENTS.md`。
 
 ## 许可
 

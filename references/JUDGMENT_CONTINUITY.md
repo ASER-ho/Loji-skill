@@ -32,6 +32,8 @@
 
 `read_only` 不是读取旁路：它仍然需要有效的 `granted` consent。`read_only + pending/denied/unset/unknown` 一律按未授权处理，不打开账本。
 
+v1.1.3 的独立状态恢复、首次先回答后询问、切换/重置及每次操作持锁复核，统一见 `MEMORY.md` §5.1。宿主认可的已确认保存状态可以转换为上述 policy/consent；状态不自带宿主权限，不从正文恢复。
+
 强制规则：
 
 - **不得通过读取 `JUDGMENTS.md` 或其 frontmatter 来判断授权状态。**

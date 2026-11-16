@@ -445,5 +445,34 @@ jobs:
             )
 
 
+class MemoryStateAssetTests(unittest.TestCase):
+    def test_missing_or_negated_state_ignore_rejected(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            ignore = root / ".gitignore"
+            ignore.write_text("memory.state.json\n", encoding="utf-8")
+            self.assertTrue(validate_repo.check_memory_state_assets(root))
+            ignore.write_text("memory.state.json\nmemory.state.json.*\n", encoding="utf-8")
+            self.assertEqual(validate_repo.check_memory_state_assets(root), [])
+            ignore.write_text("memory.state.json\nmemory.state.json.*\n!memory.state.json\n", encoding="utf-8")
+            self.assertTrue(validate_repo.check_memory_state_assets(root))
+
+    def test_validator_does_not_parse_local_state(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "memory.state.json").write_bytes(b"not public JSON")
+            (root / "public.json").write_text("{}", encoding="utf-8")
+            self.assertEqual(validate_repo.iter_json_files(root), [root / "public.json"])
+
+    def test_real_git_ignores_state_and_derivatives_at_any_depth(self):
+        import subprocess
+        names = ["memory.state.json", "memory.state.json.lock", "memory.state.json.transaction.lock",
+                 "memory.state.json.bak.1", "memory.state.json.random.tmp"]
+        for name in names + ["synthetic/" + name for name in names]:
+            result = subprocess.run(["git", "check-ignore", "--no-index", "--quiet", name], cwd=ROOT)
+            self.assertEqual(result.returncode, 0, name)
+        self.assertEqual(validate_repo.check_memory_state_assets(ROOT), [])
+
+
 if __name__ == "__main__":
     unittest.main()

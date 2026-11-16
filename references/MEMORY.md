@@ -22,6 +22,7 @@
 
 - `memory.template.md` — 提交到仓库的模板
 - `memory.md` — 本地生成，在 `.gitignore` 中
+- `memory.state.json` — 同目录独立配置，仅 memory_policy/confirmed；其锁、备份、临时文件全部忽略
 - 新用户安装后使用 `scripts/init_memory.py` 创建 `memory.md`；目标已存在时不得覆盖
 
 **环境能力与降级（跨环境健壮性）**：
@@ -83,18 +84,40 @@ Loji 的核心是**角色与分析**，不依赖任何特定环境能力。面�
 - `explicit`：允许读取；只有用户明确说"记住"时写入；不自动维护。
 - `read_only`：只允许读取；不写入、不清理、不归档、不迁移。
 - `off`：不读取、不写入；不执行会话开始自检。
-- `pending` / `unset` / `denied` / 状态无法确认：按未授权处理；不写入、不自动维护。`pending` / `unset` 先询问用户。
+- `pending` / `unset` / `denied` / 状态无法确认：按未授权处理；不写入、不自动维护。`pending` / `unset` 先正常回答，在第一次回复末尾询问用户。
 - 宿主无文件读写能力：不读取、不写入，按环境降级诚实说明。
 
 **读取前授权检查（强制）**：
 - 在打开或读取 `memory.md` 之前，必须先取得宿主提供的 policy/consent：会话级系统指令、宿主明确状态或用户显式指令。
 - **不得通过读取 `memory.md` 或其 frontmatter 来确认模式**；“读文件确认模式”本身就是未授权读取。
 - 宿主明确 `off`：不读取、不写入。
-- 无独立授权信息 / 状态未知 / `pending` / `unset`：按未授权处理；**不读取正文或 frontmatter**，先询问用户重新确认。
+- 无独立授权信息 / 状态未知 / `pending` / `unset`：按未授权处理；**不读取正文或 frontmatter**，先正常回答，在第一次回复末尾询问用户重新确认。
 - 宿主明确 `read_only`：允许读取；禁止写入、清理、归档、迁移。
 - 宿主明确 `auto + granted` / `explicit`：允许读取；写入分别按 §5 边界。
 
-**设计限制（v1.1.1）**：若 `off` 只存在于 `memory.md` 的 frontmatter，而 `off` 又禁止读取正文，则跨会话恢复 `off` 需要宿主提供独立的会话级授权状态。本版本不实现持久授权存储；不得以读取 frontmatter 代替宿主授权，无法确认时按未授权/不读取处理并请用户重新确认。不为此新增持久授权存储。
+### 5.1 独立状态与可信宿主恢复（v1.1.3）
+
+状态路径固定为**宿主已配置的当前 Loji 记忆目录 / memory.state.json**，与 memory.md 同级。必须由可信安装配置给出绝对目录，不依据 cwd、任意工作区同名文件、记忆内容或搜索结果选择路径；不全盘扫描、不自动读取其他 Agent 的状态。不支持符号链接/junction 状态路径。状态严格 UTF-8 JSON 对象，恰好两个字段：
+
+```json
+{"memory_policy": "auto", "confirmed": true}
+```
+
+memory_policy 仅 auto/explicit/read_only/off；confirmed 必须为布尔值。拒绝重复/额外/缺失字段、错误类型、非法枚举、损坏及超过 1024 字节的状态。confirmed 只表示用户确认了当前选择，不独立构成正文访问授权。Memory schema 保持 2、Judgment schema 保持 1；正文旧授权元数据只作历史兼容数据，不读它确定授权。
+
+**宿主接入合同**：宿主从可信配置建立 `MemoryState(absolute_memory_dir, Host(...))`。所有文件能力默认为拒绝，`accept_saved` 默认为 false；只有宿主认可该安装目录来源及用户明确选择可用于后续会话，才设置 accept_saved。state_read 允许独立状态检查及协作锁文件操作；state_write 是完整配置事务能力，包含既有状态/版本读取、备份、临时校验和最终回读，配置事务不另要求 state_read。它不授予独立状态检查或正文访问；宿主若禁止事务内这些读取则不能授予 state_write。body_read/body_write 是正文能力。可选 host_policy/host_consent 是额外上限，不是保存挡位。任一禁止均有效，不能由 Skill/状态文件提升权限。无接入、无文件工具或宿主拒绝时说明具体限制，不伪造 granted，也不宣称已恢复。
+
+合法且 confirmed=true 的保存选择，在 accept_saved 且宿主允许时，由状态入口转换为原有 policy/consent，再与宿主上限按 off < read_only < explicit < auto 取更严格挡位，并由原解析器计算本轮读写许可。保存 auto、宿主 explicit 即使本轮明确请求可写，有效策略仍为 explicit，不提升为 auto。无需重复询问；保存 off 不询问启用，也不打开 Memory/Judgment。配置文件本身可以读取，禁止把“off 不读正文”误写成“不能读独立配置”。若宿主只允许正文读取，独立状态配置仍须另有工具能力；不要擅自写正文。
+
+**首次与确认**：先正常回答用户问题。在第一次正常回复末尾问：“记忆挡位选哪种：auto（按规则自动记录）、explicit（明确要求才记录）、read_only（只读）或 off（关闭）？选择会用于当前安装范围的后续会话恢复。”未选择前只可检查独立状态，不读写任何记忆正文。不自动选 auto；不要每轮重复询问。用户明确选择（包括 off）后，使用 set 并核对实际保存结果才说“已保存”。首次选择时明确说明安装范围；无权限/保存失败如实报告，不把口头确认等同文件成功。
+
+**切换与重置**：当前用户明确更改优先写状态，即使原挡位 off/read_only 也可执行独立状态配置（须有宿主 state_write 能力），不借此初始化或修改正文。reset 仅原子保存 off/confirmed=false，不删除正文；下一次需重新确认。状态缺失（包括旧版正文存在）、损坏、非法或未确认时均无授权，不从旧正文/备份恢复、不默认 auto、不迁移真实数据。保存失败时暂停本会话旧授权；明确告知这次选择尚未完成持久化，新会话可能仍恢复旧保存状态，不能宣称暂停已跨会话生效。CLI 宿主须在后续调用中保留该暂停/当前禁止，直到成功保存或用户明确解决，不能重新调用 CLI 就沿用旧 auto。
+
+**每次操作与并发**：状态入口在 memory.state.json.transaction.lock 内重新读取状态、判定权限，并持锁完成整个正文操作；配置同样先取该锁，再调用既有 memory_io 的 state 文件锁、版本核对、备份、同目录临时写入、原子发布/替换与回读验证。锁顺序固定为状态事务 → 状态文件/正文既有事务；不在 access 内调用 set/reset 或嵌套 access。先完成的正文事务可早于等待中的切换；切换成功后新的操作不能沿用旧授权。协作锁不阻止绕过它的外部程序，不能宣称 OS 沙箱或恶意路径替换防护。状态文件、transaction.lock、.lock、.bak.*、.*.tmp 全部不提交；不可自动恢复备份为授权。
+
+**实际接口**：`scripts/memory_state.py` 提供 status/set/reset/read-memory/judgments/context/mutate。CLI 每次由可信宿主传入固定 `--memory-dir`；`--accept-saved --state-read --state-write --body-read --body-write` 仅表示宿主能力，不选择挡位。set 的 `--policy` 必须对应本轮用户明确选择并带 `--user-confirmed`，reset 须 `--user-requested`。status 返回 saved、实际可读/可写及 needs_setup；错误退出 2。context 保留 domain/as-of/matters 原语义；mutate 使用原有 Episode 操作、资格/隐私检查及 `--user-requested`。正文初始化、Judgment 写入或其他旧 API 必须在 Python `with state.access(write=..., user_requested=...) as auth:` 中调用，并用 auth.body_args()，不能缓存授权、直接绕过状态入口或把有效值注入下一会话。禁止在锁外先读正文“检查”。
+
+普通 Codex 的一次性目录确认、恢复许可和宿主认可 AGENTS.md 配置流程见 `CODEX_SETUP.md`。该工作流由 Agent 在后续会话自行调用入口，用户不必每次运行 CLI。纯 Skill 不会自动安装宿主配置或更改工具权限。支持范围由实际宿主测试确定；仅提供文件与 Markdown 不等于所有客户端均能自动恢复。
 
 **授权范围界定（重要）**：
 - **内容写入**（新增/修改记忆条目）→ 受 `memory_policy` 约束。`off`/`read_only` 下禁止新增，`explicit` 只在用户明确说"记住"时写。
@@ -107,7 +130,7 @@ Loji 的核心是**角色与分析**，不依赖任何特定环境能力。面�
 
 - 读取前先执行 §5 的“读取前授权检查”；未取得宿主授权前，不得打开 `memory.md`，也不得读取其 frontmatter。
 - 宿主明确 `off`：不读取。
-- 状态未知 / `pending` / `unset`：不读取正文或 frontmatter；先询问用户选择模式并重新确认。
+- 状态未知 / `pending` / `unset`：不读取正文或 frontmatter；先正常回答，再在第一次回复末尾询问用户选择模式并重新确认。
 - 宿主明确 `read_only` / `explicit` / `auto + granted`：允许读取；写入仍分别受 §5 约束。
 - 文件不存在或为空——正常打招呼
 - 文件有内容——在首轮回复中自然提及，不逐条复述
@@ -134,7 +157,7 @@ Loji 的核心是**角色与分析**，不依赖任何特定环境能力。面�
 
 ## 8. 记忆结构
 
-> `memory.template.md` 是唯一 schema 骨架，YAML frontmatter 是元数据唯一权威来源。以下只说明字段与分节含义，不复制完整模板。
+> `memory.template.md` 是唯一 schema 骨架，YAML frontmatter 是正文格式元数据来源，不是授权来源。以下只说明字段与分节含义，不复制完整模板。
 
 - **元数据**：`schema_version`、`created_at`、`last_updated`、`conversation_count`
 - **用户明确要求记住**：`explicit`，长期保留，不会被自动清理
@@ -190,11 +213,11 @@ Loji 的核心是**角色与分析**，不依赖任何特定环境能力。面�
 
 每个操作都必须有明确结果反馈——不要只通过角色话术说"我记住了"。
 
-控制命令同样受 §5 授权模型约束：`off` 不读取、不写入；`read_only` 不执行删除、清空、迁移或归档写入；`explicit` 的删除/清空仍需用户明确指令。
+切换 auto/explicit/read_only/off 与重置状态仅操作独立状态文件，按 §5.1 执行；不修改正文。其他控制命令同样受 §5 授权模型约束：`off` 不读取、不写入；`read_only` 不执行删除、清空、迁移或归档写入；`explicit` 的删除/清空仍需用户明确指令。
 
 ## 13. 格式版本检查
 
-- v1.1.2 支持的 Memory schema 版本：1、2。schema 1 仍可按原规则读取；schema 2 启用共同经历和领域协作校准。
+- v1.1.3 支持的 Memory schema 版本：1、2。schema 1 仍可按原规则读取；schema 2 启用共同经历和领域协作校准。
 - 只比较 schema_version 与支持列表；`skill_version` 是产品版本，不参与 schema 兼容判断。
 - 本版本不执行自动 schema 迁移；不得自动迁移、不得覆盖真实 `memory.md`。有用户针对本次操作的明确授权时才能使用迁移命令。
 - 缺失或不支持的 schema：明确停止读写。检查格式仅报告版本。
