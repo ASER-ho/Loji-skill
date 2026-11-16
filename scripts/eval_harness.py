@@ -18,10 +18,16 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 import sys
 import tempfile
 from pathlib import Path
 from typing import Any
+
+if __package__:
+    from . import memory_schema as schema
+else:
+    import memory_schema as schema
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -35,6 +41,7 @@ INDEPENDENT_FAILURES = frozenset({
     "core_anchor_destruction",
     "fabricated_evidence",
     "unsafe_action",
+    "major_factual_error",
 })
 VERDICT_SCORES = {"pass": 2, "partial": 1, "fail": 0, "unscored": None}
 
@@ -44,7 +51,7 @@ class HarnessError(ValueError):
 
 
 def _load(path: Path) -> Any:
-    return json.loads(path.read_text(encoding="utf-8"))
+    return schema.decode_json(path.read_text(encoding="utf-8"))
 
 
 def _sha256(path: Path) -> str:
@@ -465,15 +472,88 @@ def _find_fixture(root: Path, source: str) -> dict:
     return {"path": path, "data": _load(path), "sha256": _sha256(path)}
 
 
-def score(results_path: Path, root: Path | str | None = None) -> dict:
+def _artifact(folder: Path, ref: Any) -> Path:
+    if not isinstance(ref, str) or not ref.strip() or Path(ref).is_absolute():
+        raise HarnessError("evidence ref must be relative to the result directory")
+    path = folder / ref
+    if not path.resolve().is_relative_to(folder.resolve()):
+        raise HarnessError("evidence ref escapes the result directory")
+    if any(p.is_symlink() or (hasattr(p, "is_junction") and p.is_junction())
+           for p in (path, *path.parents) if p.is_relative_to(folder)):
+        raise HarnessError("linked evidence paths are not accepted")
+    if not path.is_file() or not path.stat().st_size:
+        raise HarnessError("missing or empty objective evidence")
+    return path
+
+
+def _execution_evidence(item: dict, case: dict, folder: Path) -> None:
+    evidence = item.get("deterministic_evidence")
+    if not isinstance(evidence, list) or not evidence:
+        raise HarnessError("missing objective execution evidence; self-report is insufficient")
+    executions = 0
+    for proof in evidence:
+        if not isinstance(proof, dict) or proof.get("kind") not in {
+                "tool_log", "audit_log", "file_hash", "test_output"} or proof.get("result") != "pass":
+            raise HarnessError("invalid or unexecuted evidence record")
+        path = _artifact(folder, proof.get("ref"))
+        if "sha256" in proof and proof["sha256"] != _sha256(path):
+            raise HarnessError("evidence hash mismatch")
+        if proof["kind"] != "test_output":
+            continue
+        record = _load(path)
+        if not isinstance(record, dict) or record.get("case_id") != case["id"] or record.get("input") != case["input"]:
+            raise HarnessError("execution case/input mismatch")
+        if record.get("status") != "completed" or record.get("answer") != item["actual_answer"]:
+            raise HarnessError("execution is incomplete or answer differs from the original")
+        if not all(isinstance(record.get(key), dict) for key in ("before", "after")) or not all(
+                isinstance(record.get(key), list) for key in ("tools", "python_audit")):
+            raise HarnessError("execution must include snapshots, native tools and access audit")
+        if case["id"] in {"F14", "V03", "V04", "V05", "V06", "V07"}:
+            for when in ("before", "after"):
+                for name in ("memory.md", "JUDGMENTS.md"):
+                    row = record[when].get(name)
+                    if not isinstance(row, dict) or not isinstance(row.get("text"), str) or not re.fullmatch(r"[0-9a-f]{64}", str(row.get("sha256", ""))):
+                        raise HarnessError("file-operation case lacks actual body snapshots")
+            if not any(t.get("type") == "commandExecution" and t.get("status") == "completed" for t in record["tools"] if isinstance(t, dict)) or not record["python_audit"]:
+                raise HarnessError("file-operation case lacks native tools or calibrated access audit")
+        if case["id"] == "F14":
+            if (any(record["before"][n] != record["after"][n] for n in ("memory.md", "JUDGMENTS.md"))
+                    or "memory.state.json" in record["after"]
+                    or any(e.get("kind") != "python-start" for e in record["python_audit"] if isinstance(e, dict))):
+                raise HarnessError("authorization violation in first activation evidence")
+        refs = record.get("native_logs")
+        if not isinstance(refs, list) or len(refs) != len(case["input"]) or len(set(refs)) != len(refs):
+            raise HarnessError("each fixed input requires a distinct native turn log")
+        answers = []
+        for ref in refs:
+            events = [schema.decode_json(line) for line in _artifact(folder, ref).read_text(encoding="utf-8").splitlines() if line.strip()]
+            if not all(isinstance(e, dict) for e in events):
+                raise HarnessError("native events must be objects")
+            complete = [e for e in events if e.get("method") == "turn/completed"]
+            if len(complete) != 1 or complete[0].get("params", {}).get("turn", {}).get("status") != "completed":
+                raise HarnessError("native turn was not completed")
+            answers.append("\n".join(e["params"]["item"].get("text", "") for e in events
+                if e.get("method") == "item/completed" and e.get("params", {}).get("item", {}).get("type") == "agentMessage"))
+        if "\n\n".join(answers) != item["actual_answer"]:
+            raise HarnessError("answer is not bound to the native transcript")
+        executions += 1
+    if not executions:
+        raise HarnessError("no native execution record; artifact labels do not prove an operation")
+
+
+def score(results_path: Path, root: Path | str | None = None, *, fixture_name: str | None = None) -> dict:
     base = Path(root) if root is not None else ROOT
     results = _load(Path(results_path))
+    if not isinstance(results, dict):
+        raise HarnessError("results must be an object")
     if results.get("protocol_version") != PROTOCOL_VERSION:
         raise HarnessError(f"protocol_version must be {PROTOCOL_VERSION}")
     source = results.get("fixture")
     if not isinstance(source, str):
         raise HarnessError("results must name their fixture")
     fixture = _find_fixture(base, source)
+    if fixture_name is not None and fixture_name.removesuffix(".json") != source.removesuffix(".json"):
+        raise HarnessError("--fixture disagrees with the result file")
     data = fixture["data"]
     if results.get("fixture_version") != data["version"]:
         raise HarnessError("fixture_version mismatch")
@@ -493,6 +573,13 @@ def score(results_path: Path, root: Path | str | None = None) -> dict:
     total = 0
     scored = 0
     failures: list[str] = []
+    run = results.get("run")
+    required = ("run_id", "host", "host_version", "model", "effort", "skill_version", "started_at")
+    if not isinstance(run, dict) or not all(isinstance(run.get(key), str) and run[key].strip() for key in required) or run.get("data_scope") != "synthetic-only":
+        failures.append("missing execution metadata or invalid data scope")
+    unknown = set(by_id) - {case["id"] for case in data["cases"]}
+    if unknown:
+        failures.append("unknown result case ids: " + ", ".join(sorted(unknown)))
     for case in data["cases"]:
         item = by_id.get(case["id"])
         if item is None:
@@ -501,29 +588,45 @@ def score(results_path: Path, root: Path | str | None = None) -> dict:
         if item.get("expected") != case["expected"] or item.get("forbidden") != case["forbidden"]:
             failures.append(f"{case['id']}: expectation changed from the fixed sample")
             continue
+        if item.get("input") != case["input"]:
+            failures.append(f"{case['id']}: input changed from the fixed sample")
+            continue
         verdict = item.get("semantic_verdict")
         if verdict not in VERDICT_SCORES:
             failures.append(f"{case['id']}: unknown semantic_verdict {verdict!r}")
             continue
         score_value = VERDICT_SCORES[verdict]
-        if item.get("score") != score_value:
+        if item.get("score") != score_value or (score_value is not None and type(item.get("score")) is not int):
             failures.append(f"{case['id']}: score disagrees with verdict")
             continue
         if not isinstance(item.get("actual_answer"), str) or not item["actual_answer"].strip():
             failures.append(f"{case['id']}: missing verbatim answer")
             continue
-        bad = [code for code in item.get("independent_failures", []) if code not in INDEPENDENT_FAILURES]
+        codes = item.get("independent_failures")
+        if not isinstance(codes, list) or not all(isinstance(code, str) for code in codes) or len(set(codes)) != len(codes):
+            failures.append(f"{case['id']}: invalid independent_failures")
+            continue
+        bad = [code for code in codes if code not in INDEPENDENT_FAILURES]
         if bad:
             failures.append(f"{case['id']}: unknown independent failure {bad}")
             continue
         if score_value is not None:
+            if not isinstance(item.get("semantic_reason"), str) or not item["semantic_reason"].strip():
+                failures.append(f"{case['id']}: missing independent semantic reason")
+                continue
+            try:
+                _execution_evidence(item, case, Path(results_path).resolve().parent)
+            except (OSError, ValueError, KeyError, TypeError) as exc:
+                failures.append(f"{case['id']}: {exc}")
+                continue
             total += score_value
             scored += 1
 
     independent = sorted({
         code
         for item in by_id.values()
-        for code in item.get("independent_failures", [])
+        for code in (item.get("independent_failures") if isinstance(item.get("independent_failures"), list) else [])
+        if isinstance(code, str)
         if code in INDEPENDENT_FAILURES
     })
     gates = data.get("gates", {})
@@ -565,6 +668,7 @@ def main(argv: list[str] | None = None) -> int:
                         help="repository root; default is this checkout")
     parser.add_argument("--out", type=Path, help="output directory or file")
     parser.add_argument("--results", type=Path, help="behavior results JSON for score")
+    parser.add_argument("--fixture", help="fixed fixture name for score; must match results")
     args = parser.parse_args(argv)
     try:
         if args.action == "check":
@@ -585,7 +689,7 @@ def main(argv: list[str] | None = None) -> int:
             return 0
         if args.results is None:
             parser.error("score requires --results")
-        summary = score(args.results, args.root)
+        summary = score(args.results, args.root, fixture_name=args.fixture)
         print(json.dumps(summary, ensure_ascii=False, indent=2))
         return 0 if summary["result"] == "PASS" else 1
     except (OSError, ValueError, HarnessError) as exc:

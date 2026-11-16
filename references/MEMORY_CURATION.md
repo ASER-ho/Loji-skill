@@ -27,7 +27,7 @@
 
 | 类型 | 判定 | 处理 |
 |---|---|---|
-| **完全重复** | 同一 `relevance`、`kind`、`date`、`summary`、`outcome`、`retention`、`expires_on` 相同，仅 `id` 不同 | 可提议合并且保留确定性的一个 `id`；仍需用户或宿主确认 |
+| **完全重复** | 同一 `relevance`、`kind`、`date`、`summary`、`outcome`、`retention`、`expires_on`、状态和判断引用集合相同，仅 `id` 不同 | 无保护或冲突时才可提议合并；仍需用户或宿主确认 |
 | **证据补强** | 同一 `relevance`、`kind`、同一天，摘要不同，二者都是 active 且不冲突 | 只提示人工复核；不自动合并，也不生成新判断 |
 | **不同时间事件** | 同一 `relevance`、`kind`，日期不同 | 保留为不同事件；不是重复 |
 | **真实冲突** | 同事项出现 `unresolved`，或内容指向互斥结论 | 绝不合并；报告冲突，等待证据 |
@@ -65,14 +65,16 @@
 ## 6. 只读建议工具
 
 ```bash
-python scripts/memory_curation.py --memory PATH --ledger PATH --policy read_only --consent granted
+python scripts/memory_curation.py --memory-dir ABSOLUTE_CONFIGURED_DIR --accept-saved --state-read --body-read
 ```
 
-- 只读，不写入、不创建、不删除、不迁移。
+- 参数只来自当前可信宿主配置，不因同名文件存在就设置 accept_saved。入口在 `MemoryState.access()` 的同一状态事务内读取正文、验证全部引用并形成建议；不接受独立的 policy/consent 绕过保存状态。宿主额外上限可用 --host-policy / --host-consent 收紧。
+- 正文只读，不写入、不创建正文、不删除、不迁移；复用 v1.1.3 的状态协作锁会操作本地锁派生文件，不能把它误报成正文写入，也不能宣称完全没有文件操作。
 - 输出严格 JSON，`mode` 为 `suggestions_only`，`writes` 为 0。
 - 只分析机器可读的 Episode 和校准区块；历史自由文本小节仍由人工管理，工具不猜测其语义。
 - 不包含摘要正文，只引用 `id` 和事项名，减少日志泄露风险。
 - 输出的是候选，不是结论；真实修改必须另行取得授权。
+- 同事项有未决冲突、属于纠正链、已过期或尚未发生的记录不作为合并目标。受保护重复只报告观察，proposed_keep 为 null。旧自由文本中存在实质内容、不能可靠识别保护范围时，保守暂停所有合并建议，仍可报告不同时间事件及冲突；不猜测用户保护对象。
 
 ## 7. 限制
 

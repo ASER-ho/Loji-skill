@@ -22,6 +22,17 @@ if str(ROOT) not in sys.path:
 from scripts import judgment_ledger as jl  # noqa: E402
 from scripts import memory_curation as curation  # noqa: E402
 from scripts import memory_schema as schema  # noqa: E402
+from scripts.memory_state import MemoryState, Host
+
+
+def configured(folder, policy="read_only"):
+    state = MemoryState(folder.resolve(), Host(True, True, True, True, True))
+    state.configure(policy, user_confirmed=True)
+    return state
+
+
+def cli(folder):
+    return ["--memory-dir", str(folder.resolve()), "--accept-saved", "--state-read", "--body-read"]
 
 
 def judgment():
@@ -89,8 +100,8 @@ class CurationTests(unittest.TestCase):
         self.addCleanup(tmp.cleanup)
         self.folder = Path(tmp.name)
         self.memory, self.ledger = build(self.folder)
-        doc = curation._load(self.memory, self.ledger, "read_only", "granted")
-        self.result = curation.analyze(doc, as_of="2040-03-01")
+        with curation._load(configured(self.folder)) as doc:
+            self.result = curation.analyze(doc, as_of="2040-03-01")
 
     def test_mode_is_suggestions_only(self) -> None:
         self.assertEqual(self.result["mode"], "suggestions_only")
@@ -139,6 +150,8 @@ class CurationCliTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             folder = Path(tmp)
             memory, ledger = build(folder)
+            configured(folder)
+            initial_names = {p.name for p in folder.iterdir()}
             before = (
                 hashlib.sha256(memory.read_bytes()).hexdigest(),
                 hashlib.sha256(ledger.read_bytes()).hexdigest(),
@@ -146,11 +159,7 @@ class CurationCliTests(unittest.TestCase):
             out = io.StringIO()
             err = io.StringIO()
             with redirect_stdout(out), redirect_stderr(err):
-                code = curation.main([
-                    "--memory", str(memory), "--ledger", str(ledger),
-                    "--policy", "read_only", "--consent", "granted",
-                    "--as-of", "2040-03-01",
-                ])
+                code = curation.main(cli(folder) + ["--as-of", "2040-03-01"])
             self.assertEqual(code, 0, err.getvalue())
             data = json.loads(out.getvalue())
             self.assertEqual(data["writes"], 0)
@@ -159,19 +168,16 @@ class CurationCliTests(unittest.TestCase):
                 hashlib.sha256(ledger.read_bytes()).hexdigest(),
             )
             self.assertEqual(before, after)
-            self.assertEqual(sorted(p.name for p in folder.iterdir()),
-                             ["JUDGMENTS.md", "memory.md"])
+            self.assertEqual({p.name for p in folder.iterdir()}, initial_names)
 
     def test_off_is_denied_before_reading(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             folder = Path(tmp)
             memory, ledger = build(folder)
+            configured(folder, "off")
             err = io.StringIO()
             with redirect_stdout(io.StringIO()), redirect_stderr(err):
-                code = curation.main([
-                    "--memory", str(memory), "--ledger", str(ledger),
-                    "--policy", "off", "--consent", "granted",
-                ])
+                code = curation.main(cli(folder))
             self.assertEqual(code, 1)
             self.assertIn("refused", err.getvalue())
 
@@ -182,11 +188,10 @@ class CurationCliTests(unittest.TestCase):
             text = (ROOT / "memory.template.md").read_text(encoding="utf-8")
             text = text.replace("schema_version: 2", "schema_version: 1")
             memory.write_text(text, encoding="utf-8")
+            configured(folder)
             err = io.StringIO()
             with redirect_stdout(io.StringIO()), redirect_stderr(err):
-                code = curation.main([
-                    "--memory", str(memory), "--policy", "read_only", "--consent", "granted",
-                ])
+                code = curation.main(cli(folder))
             self.assertEqual(code, 1)
 
 

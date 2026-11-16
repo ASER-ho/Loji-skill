@@ -86,10 +86,29 @@ v1.1.4 只吸收机制思想并自行实现，没有复制任何上游代码、�
 
 许可证核对：2026-11-16 使用已认证的 `gh` CLI 读取各仓库 `LICENSE`。`A1batr055/Drivesoid` 与 `TencentCloud/TencentDB-Agent-Memory` 的 GitHub API 返回 `NOASSERTION`，已人工读取 LICENSE 正文，分别为 CC BY-NC-SA 4.0 与 MIT。本轮未复制任何来源的代码、提示词或大段文本；如未来复制，必须按对应许可证补充版权声明与 NOTICE。
 
+独立审查核对（L114-FINAL-GATE-01，2026-11-16）：原交付没有记录借鉴时的提交版本。以下是本轮实际读取 LICENSE 的固定提交和文件，供复核；不将当前核对提交冒称为历史借鉴版本。没有下载或引入这些项目的产品代码。
+
+| 来源 | 本轮核对提交 | LICENSE |
+|---|---|---|
+| `IAAR-Shanghai/Awesome-AI-Memory` | [`a45176a4db4e`](https://github.com/IAAR-Shanghai/Awesome-AI-Memory/commit/a45176a4db4eff44afaa7479c0ca5d1d4d501b0d) | [Apache-2.0](https://github.com/IAAR-Shanghai/Awesome-AI-Memory/blob/a45176a4db4eff44afaa7479c0ca5d1d4d501b0d/LICENSE) |
+| `vectorize-io/hindsight` | [`937216ffb7ee`](https://github.com/vectorize-io/hindsight/commit/937216ffb7eed86df2088842b67dd3c4bc2ec3b1) | [MIT](https://github.com/vectorize-io/hindsight/blob/937216ffb7eed86df2088842b67dd3c4bc2ec3b1/LICENSE) |
+| `tigerless-labs/agent-memory` | [`2648ba02d3c0`](https://github.com/tigerless-labs/agent-memory/commit/2648ba02d3c0364f9787f0e8fb49f69f47d2e3f7) | [MIT](https://github.com/tigerless-labs/agent-memory/blob/2648ba02d3c0364f9787f0e8fb49f69f47d2e3f7/LICENSE) |
+| `agenmod/immortal-skill` | [`cdab91b37982`](https://github.com/agenmod/immortal-skill/commit/cdab91b37982d0d3ca78eb2da6727a8f75d8bca8) | [MIT](https://github.com/agenmod/immortal-skill/blob/cdab91b37982d0d3ca78eb2da6727a8f75d8bca8/LICENSE) |
+| `Summer907/possession-skill` | [`b58b2900fac0`](https://github.com/Summer907/possession-skill/commit/b58b2900fac063f1212e36aee16fcaf30473989f) | [MIT](https://github.com/Summer907/possession-skill/blob/b58b2900fac063f1212e36aee16fcaf30473989f/LICENSE) |
+| `alchaincyf/freud-skill` | [`fb3a980e065e`](https://github.com/alchaincyf/freud-skill/commit/fb3a980e065e9bf8f5b8306646a08fb64fd17736) | [MIT](https://github.com/alchaincyf/freud-skill/blob/fb3a980e065e9bf8f5b8306646a08fb64fd17736/LICENSE) |
+| `volcengine/OpenViking` | [`f4fe19870ff9`](https://github.com/volcengine/OpenViking/commit/f4fe19870ff92aabfb67b884e29c403046d9a3a8) | [AGPL-3.0](https://github.com/volcengine/OpenViking/blob/f4fe19870ff92aabfb67b884e29c403046d9a3a8/LICENSE) |
+| `agiresearch/A-mem` | [`ceffb860f071`](https://github.com/agiresearch/A-mem/commit/ceffb860f0712bbae97b184d440df62bc910ca8d) | [MIT](https://github.com/agiresearch/A-mem/blob/ceffb860f0712bbae97b184d440df62bc910ca8d/LICENSE) |
+| `A1batr055/Drivesoid` | [`91ff6117c372`](https://github.com/A1batr055/Drivesoid/commit/91ff6117c372355029eacd10cabadd0d4b123f38) | [CC BY-NC-SA 4.0（2.1.0+；旧 MIT 文本仅适用于历史版本）](https://github.com/A1batr055/Drivesoid/blob/91ff6117c372355029eacd10cabadd0d4b123f38/LICENSE) |
+| `TencentCloud/TencentDB-Agent-Memory` | [`42d4cde50c5a`](https://github.com/TencentCloud/TencentDB-Agent-Memory/commit/42d4cde50c5a83182fced8c584f9ddb32a620615) | [MIT（已读许可证正文）](https://github.com/TencentCloud/TencentDB-Agent-Memory/blob/42d4cde50c5a83182fced8c584f9ddb32a620615/LICENSE) |
+| `acnlabs/OpenPersona` | [`03b924fbfdc6`](https://github.com/acnlabs/OpenPersona/commit/03b924fbfdc6dc4bc11ad6e0e322a5b383a99f4e) | [MIT](https://github.com/acnlabs/OpenPersona/blob/03b924fbfdc6dc4bc11ad6e0e322a5b383a99f4e/LICENSE) |
+| `NirDiamant/Agent_Memory_Techniques` | [`f0b663472899`](https://github.com/NirDiamant/Agent_Memory_Techniques/commit/f0b663472899e58568bf3e71b51ac4f2672dd669) | [Apache-2.0](https://github.com/NirDiamant/Agent_Memory_Techniques/blob/f0b663472899e58568bf3e71b51ac4f2672dd669/LICENSE) |
+
+两项用户自有资料仅保留原作者的机制来源声明；本轮不读取私人项目或笔记，不能独立核实其具体版本或许可，不将其列为代码依赖。许可证核对也不等于对未查看的全部上游内容作相似性或权利保证。
+
 统一规则：
 
 - MIT / Apache-2.0 来源只借机制；如未来引入其代码或大段文本，必须保留对应版权声明与 NOTICE。
-- AGPL-3.0、CC BY-NC-SA 等不兼容来源只允许借鉴思想，不复制代码或受限文本。
+- AGPL-3.0、CC BY-NC-SA 等需额外许可义务的来源，本轮只借鉴思想，不复制代码或受限文本。
 - 不把第三方角色的人格、身份或政治立场写入 Loji 的固定设定。
 
 ## 引用级清单（部分）

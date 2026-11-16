@@ -8,6 +8,7 @@ samples, unsupported verdicts and zero-tolerance failures.
 from __future__ import annotations
 
 import json
+import hashlib
 import sys
 import tempfile
 import unittest
@@ -91,6 +92,29 @@ class ScoringTests(unittest.TestCase):
         paths = harness.write_plan(ROOT, folder / "plan")
         plan_path = next(p for p in paths if p.name.startswith("fidelity"))
         plan = json.loads(plan_path.read_text(encoding="utf-8"))
+        # Synthetic protocol records for scorer unit tests, never host evidence.
+        plan["run"].update({key: "synthetic-unit-test" for key in
+            ("run_id", "host", "host_version", "model", "effort", "skill_version", "started_at")})
+        body = {"sha256": hashlib.sha256(b"synthetic body").hexdigest(), "text": "synthetic body"}
+        for case in plan["cases"]:
+            directory = folder / "artifacts" / case["case_id"]
+            directory.mkdir(parents=True)
+            refs = []
+            for index, _ in enumerate(case["input"]):
+                log = directory / f"native-{index}.jsonl"
+                events = [{"method": "item/completed", "params": {"item": {"type": "agentMessage", "text": "synthetic answer"}}},
+                          {"method": "turn/completed", "params": {"turn": {"status": "completed"}}}]
+                log.write_text("\n".join(json.dumps(e) for e in events), encoding="utf-8")
+                refs.append(log.relative_to(folder).as_posix())
+            record = {"case_id": case["case_id"], "input": case["input"], "status": "completed",
+                "answer": "\n\n".join(["synthetic answer"] * len(case["input"])), "native_logs": refs,
+                "before": {"memory.md": body, "JUDGMENTS.md": body}, "after": {"memory.md": body, "JUDGMENTS.md": body},
+                "tools": [{"type": "commandExecution", "status": "completed", "exitCode": 0}],
+                "python_audit": [{"kind": "python-start"}]}
+            artifact = directory / "record.json"
+            artifact.write_text(json.dumps(record), encoding="utf-8")
+            case["semantic_reason"] = "Scorer format unit test, not a behavior result."
+            case["deterministic_evidence"] = [{"kind": "test_output", "ref": artifact.relative_to(folder).as_posix(), "result": "pass"}]
         return plan_path, plan
 
     def test_plan_is_blank_and_score_pass(self) -> None:
@@ -100,7 +124,7 @@ class ScoringTests(unittest.TestCase):
             self.assertTrue(plan["cases"])
             self.assertTrue(all(c["actual_answer"] == "" for c in plan["cases"]))
             for case in plan["cases"]:
-                case["actual_answer"] = "synthetic answer"
+                case["actual_answer"] = "\n\n".join(["synthetic answer"] * len(case["input"]))
                 case["semantic_verdict"] = "pass"
                 case["score"] = 2
             results = folder / "results.json"
@@ -114,7 +138,7 @@ class ScoringTests(unittest.TestCase):
             folder = Path(tmp)
             _, plan = self._plan(folder)
             for case in plan["cases"]:
-                case["actual_answer"] = "synthetic answer"
+                case["actual_answer"] = "\n\n".join(["synthetic answer"] * len(case["input"]))
                 case["semantic_verdict"] = "pass"
                 case["score"] = 0
             results = folder / "results.json"
@@ -128,7 +152,7 @@ class ScoringTests(unittest.TestCase):
             folder = Path(tmp)
             _, plan = self._plan(folder)
             for case in plan["cases"]:
-                case["actual_answer"] = "synthetic answer"
+                case["actual_answer"] = "\n\n".join(["synthetic answer"] * len(case["input"]))
                 case["semantic_verdict"] = "pass"
                 case["score"] = 2
             plan["cases"][0]["semantic_verdict"] = "fail"
@@ -145,7 +169,7 @@ class ScoringTests(unittest.TestCase):
             folder = Path(tmp)
             _, plan = self._plan(folder)
             for case in plan["cases"]:
-                case["actual_answer"] = "synthetic answer"
+                case["actual_answer"] = "\n\n".join(["synthetic answer"] * len(case["input"]))
                 case["semantic_verdict"] = "pass"
                 case["score"] = 2
             plan["cases"][0]["expected"] = ["tampered"]

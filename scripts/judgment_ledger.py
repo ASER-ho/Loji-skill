@@ -450,6 +450,20 @@ def _valid_date(value: Any) -> bool:
     return True
 
 
+def validate_new_basis(judgment: Judgment) -> list[str]:
+    """Validate optional tier syntax on a new write, never reinterpret history."""
+    errors = []
+    for index, basis in enumerate(judgment.basis):
+        if not isinstance(basis, str):
+            continue  # Existing schema validation reports the type error.
+        for tag in BASIS_TAGS:
+            if basis.startswith((tag + "：", tag + ":")):
+                if not basis[len(tag) + 1:].strip():
+                    errors.append(f"{judgment.id}: basis[{index}] has an empty evidence tier after {tag!r}")
+                break
+    return errors
+
+
 def validate_judgments(judgments: Iterable[Judgment]) -> list[str]:
     """Return every schema or cross-record error in ``judgments``."""
     items = list(judgments)
@@ -494,15 +508,6 @@ def validate_judgments(judgments: Iterable[Judgment]) -> list[str]:
         for index, basis in enumerate(item.basis):
             if not _nonempty(basis):
                 errors.append(f"{label}: basis[{index}] must be non-empty")
-                continue
-            for tag in BASIS_TAGS:
-                if basis.startswith(tag + "：") or basis.startswith(tag + ":"):
-                    if not basis[len(tag) + 1 :].strip():
-                        errors.append(
-                            f"{label}: basis[{index}] has an empty evidence tier "
-                            f"after {tag!r}"
-                        )
-                    break
 
         if len(item.would_change_if) > MAX_WOULD_CHANGE_IF:
             errors.append(
@@ -708,7 +713,7 @@ def append_judgment(
 
     document, version = load_ledger(path, policy=policy, consent=consent)
     combined = list(document.judgments) + [judgment]
-    errors = validate_judgments(combined)
+    errors = validate_judgments(combined) + validate_new_basis(judgment)
     if errors:
         raise JudgmentValidationError("; ".join(errors))
 
@@ -787,7 +792,7 @@ def revise_judgment(
         updated_previous if item.id == previous.id else item
         for item in document.judgments
     ] + [successor]
-    errors = validate_judgments(updated_items)
+    errors = validate_judgments(updated_items) + validate_new_basis(successor)
     if errors:
         raise JudgmentValidationError("; ".join(errors))
 

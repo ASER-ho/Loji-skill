@@ -52,7 +52,7 @@ class BasisTierTests(unittest.TestCase):
 
     def test_empty_tier_content_is_rejected(self) -> None:
         for basis in ("直接证据：", "可核查产物:", "未验证印象：   "):
-            errors = jl.validate_judgments([record(basis=[basis])])
+            errors = jl.validate_new_basis(record(basis=[basis]))
             self.assertTrue(any("evidence tier" in error for error in errors), errors)
 
     def test_untagged_legacy_basis_stays_valid(self) -> None:
