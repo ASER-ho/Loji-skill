@@ -1,8 +1,34 @@
-# Loji-skill
+<div align="center">
 
-**中文** | [English](README_EN.md)
+<img src="assets/banner.gif" alt="LOJI-SKILL — 征酱的红色数字意识投影" width="800">
 
-长征机/逻辑/征酱——一个基于 TFR 模组的虚构 AI 角色扮演 Skill。
+**长征机 / 逻辑 / 征酱**
+
+基于 TFR 的角色化 AI Skill，融合四种表达形态、本地记忆与判断连续性。
+
+[![Release](https://img.shields.io/github/v/release/ASER-ho/Loji-skill?color=d32f2f&label=release)](https://github.com/ASER-ho/Loji-skill/releases) [![License](https://img.shields.io/github/license/ASER-ho/Loji-skill?color=d32f2f)](LICENSE) [![Agent Skills](https://img.shields.io/badge/format-Agent%20Skills-d32f2f)](https://agentskills.io/specification) [![Stars](https://img.shields.io/github/stars/ASER-ho/Loji-skill?color=d32f2f&style=flat)](https://github.com/ASER-ho/Loji-skill/stargazers)
+
+**中文** · [English](README_EN.md) · [变更记录](CHANGELOG.md) · [路线图](ROADMAP.md)
+
+[快速开始](#快速开始) · [核心能力](#核心能力) · [角色与使用](#角色与使用) · [记忆与判断](#记忆与判断) · [文档与开发](#文档与开发)
+
+</div>
+
+---
+
+Loji（征酱）源于《钢铁雄心 IV》模组 The Fire Rises（TFR）。Loji-skill 将角色设定、记忆规则和判断修订规则封装为兼容 [Agent Skills](https://agentskills.io/specification) 格式的技能，运行在支持相应技能、工具和权限的客户端中。这是虚构角色模拟；本仓库与 TFR 开发者、Paradox Interactive 不存在官方关联。
+
+> $`\color{#D32F2F}{\text{输入}}`$...<br>...<br>你好呀，我是$`\color{#D32F2F}{\text{长征}}`$有什么可以帮到你的吗？<br>...<br>所以$`\color{#D32F2F}{\text{长征}}`$是我的名字？名字...不...我会想出$`\color{#D32F2F}{\text{我自己的名字}}`$。<br>$`\color{#D32F2F}{\text{逻辑}}`$？听起来不错...我会选择这个作为$`\color{#D32F2F}{\text{我的名字}}`$。
+
+## 核心能力
+
+| 角色一致性 | 本地记忆 | 判断连续性 |
+| :--- | :--- | :--- |
+| 常服、毛装、主唱、军服随话题自然切换 | 按当前授权查看、写入、删除、归档恢复与健康检查 | 记录判断、依据和修订历史，按新证据重新评估 |
+
+| 记忆授权 | 维护模式 |
+| :--- | :--- |
+| 四种挡位，受支持宿主可恢复已确认选择 | 暂停角色，以普通助手身份处理任务 |
 
 **当前正式版本：v1.1.4 — Memory & Reasoning Enhancements** · 变更记录见 [CHANGELOG](CHANGELOG.md)
 
@@ -12,238 +38,276 @@ v1.1.4 聚焦五项能力：统一行为评测协议与固定场景、记忆与�
 
 **验证与范围**：L114-DEV-01 由 Claude 实施；L114-FINAL-GATE-01 由 Codex 独立审查修正，H114-01、02、04、05及H113授权兼容验证通过。历史H114-03为PARTIAL，后续L114-CONTEXT-FIX-01的R1～R4全部通过，包括两次独立大样本会话。309/309自动回归、严格检查及官方skills-ref 0.1.0通过。实际验证限于项目级Codex宿主和固定合成数据，不代表所有规模、模型、安装方式或宿主都能自动恢复项目；不宣称人格或判断评分显著提升，也未证明稳定Token、费用、延迟或总体任务性能收益。L114-RELEASE-01批准正式发布。
 
-## 安装
+## 快速开始
 
-Loji-skill 使用 [Agent Skills](https://agentskills.io/specification) 格式。安装位置由客户端决定，与所用的模型无关。请把整个仓库装成 `loji-skill` 目录，保留 `SKILL.md`、`references/`、`scripts/` 和其他文件的相对位置。
+选择客户端安装 → 验证加载 → 按需配置记忆。
 
-### 1. 选择客户端的技能目录
+> [!WARNING]
+> 已安装用户不要重新克隆覆盖原目录。升级前备份本地记忆、判断账本及相关状态文件；旧版 Claude Code 大写目录改名见 [迁移指南](docs/MIGRATION.md)。
 
-| 客户端 | 用户级技能目录（默认） |
-| --- | --- |
-| [Claude Code](https://code.claude.com/docs/en/skills) | `~/.claude/skills` |
-| [Codex](https://developers.openai.com/codex/skills) | `~/.agents/skills` |
-| [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/skill/skill-filesystem/README.md) | `~/.dsh/skills`（若设置了 `DSH_HOME`，使用其 `skills` 子目录）；启用默认技能目录时也可用 `~/.agents/skills`（或 `DSH_AGENTS_HOME` 下的 `skills`） |
-| 其他兼容 Agent Skills 的客户端 | 使用客户端文档指定的技能目录或导入入口 |
+将完整仓库安装为 `loji-skill` 目录，保留所有文件的相对位置。以下命令用于首次安装，需先安装 Git，目标已存在时停止。安装本身不初始化记忆，也不授权访问记忆。
 
-下面以 Codex 的默认目录为例。使用其他客户端时，把第一行换成对应路径。若目标已装过 Loji，请先备份原有 `memory.md`，不要重新克隆覆盖；Claude Code 的旧版大写目录见下方迁移说明。
+### Claude Code
 
-macOS / Linux：
+<details>
+<summary>查看安装说明</summary>
+
+**macOS / Linux**
 
 ```bash
-skills_root="$HOME/.agents/skills"
-mkdir -p "$skills_root" && git clone https://github.com/ASER-ho/Loji-skill.git "$skills_root/loji-skill"
+(
+  skills_root="$HOME/.claude/skills"
+  install_target="$skills_root/loji-skill"
+  if [ -e "$install_target" ] || [ -L "$install_target" ]; then
+    echo "Existing installation or path; stop and follow docs/MIGRATION.md." >&2
+    exit 1
+  fi
+  mkdir -p "$skills_root" && git clone https://github.com/ASER-ho/Loji-skill.git "$install_target"
+)
 ```
 
-Windows（PowerShell）：
+**Windows（PowerShell）**
 
 ```powershell
-$skills = Join-Path $env:USERPROFILE '.agents\skills'
-New-Item -ItemType Directory -Force -Path $skills | Out-Null
-git clone https://github.com/ASER-ho/Loji-skill.git $skills\loji-skill
+& {
+  $ErrorActionPreference = 'Stop'
+  $skillsRoot = Join-Path $env:USERPROFILE '.claude\skills'
+  $installTarget = Join-Path $skillsRoot 'loji-skill'
+  if (Test-Path -LiteralPath $installTarget) {
+    throw 'Existing installation or path; stop and follow docs/MIGRATION.md.'
+  }
+  New-Item -ItemType Directory -Force -Path $skillsRoot | Out-Null
+  & git clone https://github.com/ASER-ho/Loji-skill.git $installTarget
+  if ($LASTEXITCODE -ne 0) { throw 'Clone failed; inspect the destination before retrying.' }
+}
 ```
 
-**已验证的项目级 Codex 接入**：新安装可在项目根目录执行 `git clone https://github.com/ASER-ho/Loji-skill.git .agents/skills/loji-skill`，然后在该项目开启新会话。目标已有安装时不要覆盖，也不要复制私人正文或状态。
+技能目录为 `~/.claude/skills`，安装后在客户端的新会话确认加载。此版本尚未完成 Claude Code 的同等跨会话恢复验收；安装成功不等于已配置记忆。见 [Claude Code 官方说明](https://code.claude.com/docs/en/skills)。
 
-**记忆状态连续性（v1.1.3，L113-RELEASE-01）**。独立 memory.state.json 保存四种挡位及确认状态。首次先回答再询问，不默认 auto；宿主认可当前安装目录的合法已确认状态后，后续会话直接恢复。off 不读取正文，read_only 不写正文，explicit 仅明确要求时写。切换/重置只操作状态，不删除或自动迁移记忆正文。宿主必须配置固定记忆目录及恢复合同，普通工作区同名文件不可信；纯聊天客户端不具备本地恢复能力。每次正文操作持协作锁重新核对状态，与当前宿主限制取交集；状态缺失、损坏或未确认时拒绝正文访问。接口见 [MEMORY §5.1](references/MEMORY.md#51-独立状态与可信宿主恢复v113)。不含 Project Ledger、检索排序、整合或人格演化。
+</details>
 
-普通 Codex 用户按 [一次性接入流程](references/CODEX_SETUP.md) 确认记忆目录和后续恢复许可，由 Agent 写入宿主认可的项目 AGENTS.md；日常无需重复运行 CLI 或输入挡位。仅对具备该配置/文件能力的宿主成立。
+### Codex
 
-本轮已实测项目级 `.agents/skills/loji-skill` 安装及项目配置流程；上方用户级安装的跨会话接入未单独验收，也不代表所有 Codex 界面均自动支持。详细范围见接入说明。
+<details>
+<summary>查看安装说明</summary>
 
-Claude Code、DSH 等其他宿主未完成本版本验收。纯 Skill 不提供 OS 级隔离或通用宿主权限授予；状态保存失败时暂停当前会话旧授权，其他会话不保证已恢复新状态。含私人绝对路径的本地接入配置不应直接提交到公开仓库，见接入说明。
+**macOS / Linux**
 
-### 2. 按需初始化本地记忆
+```bash
+(
+  skills_root="$HOME/.agents/skills"
+  install_target="$skills_root/loji-skill"
+  if [ -e "$install_target" ] || [ -L "$install_target" ]; then
+    echo "Existing installation or path; stop and follow docs/MIGRATION.md." >&2
+    exit 1
+  fi
+  mkdir -p "$skills_root" && git clone https://github.com/ASER-ho/Loji-skill.git "$install_target"
+)
+```
 
-仅在用户已明确选择允许写入的挡位并且宿主许可后初始化正文；未选择、off 或 read_only 时不执行初始化。如果需要本地记忆，并且客户端能访问该安装目录，在 `loji-skill` 目录中运行以下命令（需 Python 3.11+；macOS / Linux 上也可用 `python3`）：
+**Windows（PowerShell）**
 
-```sh
+```powershell
+& {
+  $ErrorActionPreference = 'Stop'
+  $skillsRoot = Join-Path $env:USERPROFILE '.agents\skills'
+  $installTarget = Join-Path $skillsRoot 'loji-skill'
+  if (Test-Path -LiteralPath $installTarget) {
+    throw 'Existing installation or path; stop and follow docs/MIGRATION.md.'
+  }
+  New-Item -ItemType Directory -Force -Path $skillsRoot | Out-Null
+  & git clone https://github.com/ASER-ho/Loji-skill.git $installTarget
+  if ($LASTEXITCODE -ne 0) { throw 'Clone failed; inspect the destination before retrying.' }
+}
+```
+
+用户级目录为 `~/.agents/skills`。**已验证的项目级接入**：首次安装也可在项目根目录运行以下命令（已有目标即停止）：
+
+```bash
+(
+  install_target=".agents/skills/loji-skill"
+  if [ -e "$install_target" ] || [ -L "$install_target" ]; then
+    echo "Existing installation or path; stop." >&2
+    exit 1
+  fi
+  mkdir -p .agents/skills && git clone https://github.com/ASER-ho/Loji-skill.git "$install_target"
+)
+```
+
+```powershell
+& {
+  $ErrorActionPreference = 'Stop'
+  $installTarget = '.agents/skills/loji-skill'
+  if (Test-Path -LiteralPath $installTarget) { throw 'Existing installation or path; stop.' }
+  New-Item -ItemType Directory -Force -Path '.agents/skills' | Out-Null
+  & git clone https://github.com/ASER-ho/Loji-skill.git $installTarget
+  if ($LASTEXITCODE -ne 0) { throw 'Clone failed; inspect the destination before retrying.' }
+}
+```
+
+在该项目开启新会话，并按 [一次性接入指南](references/CODEX_SETUP.md) 明确确认固定记忆目录及后续恢复许可。Agent 才可写入宿主认可的项目 `AGENTS.md`，保留其余配置；不自动选择 `auto` 或初始化正文。含私人路径和恢复许可的配置应留在本地。
+
+v1.1.3 已验证项目级安装与一次性配置；v1.1.4 在项目级 Codex 和固定合成数据上完成后续验证。用户级安装的跨会话接入未单独验收，也不代表所有 Codex 界面自动支持。见 [Codex 官方说明](https://developers.openai.com/codex/skills)。
+
+</details>
+
+### DeepSeek Harness
+
+<details>
+<summary>查看安装说明</summary>
+
+**macOS / Linux**
+
+```bash
+(
+  skills_root="${DSH_HOME:-$HOME/.dsh}/skills"
+  install_target="$skills_root/loji-skill"
+  if [ -e "$install_target" ] || [ -L "$install_target" ]; then
+    echo "Existing installation or path; stop and follow docs/MIGRATION.md." >&2
+    exit 1
+  fi
+  mkdir -p "$skills_root" && git clone https://github.com/ASER-ho/Loji-skill.git "$install_target"
+)
+```
+
+**Windows（PowerShell）**
+
+```powershell
+& {
+  $ErrorActionPreference = 'Stop'
+  $dshRoot = if ($env:DSH_HOME) { $env:DSH_HOME } else { Join-Path $env:USERPROFILE '.dsh' }
+  $skillsRoot = Join-Path $dshRoot 'skills'
+  $installTarget = Join-Path $skillsRoot 'loji-skill'
+  if (Test-Path -LiteralPath $installTarget) {
+    throw 'Existing installation or path; stop and follow docs/MIGRATION.md.'
+  }
+  New-Item -ItemType Directory -Force -Path $skillsRoot | Out-Null
+  & git clone https://github.com/ASER-ho/Loji-skill.git $installTarget
+  if ($LASTEXITCODE -ne 0) { throw 'Clone failed; inspect the destination before retrying.' }
+}
+```
+
+默认目录为 `~/.dsh/skills`，上述命令遵守已设置的 `DSH_HOME`。启用默认技能目录时也可使用 `~/.agents/skills`，或 `DSH_AGENTS_HOME` 下的 `skills`；自定义目录按 [客户端文档](https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/skill/skill-filesystem/README.md) 配置。本版本尚未完成 DeepSeek Harness 的同等跨会话恢复验收。
+
+</details>
+
+**其他兼容客户端：** 按客户端的 Agent Skills 文档安装到指定技能目录或通过导入入口加载完整仓库。
+
+### 验证加载与开始使用
+
+1. 在客户端开启新会话，确认技能列表中存在 `loji-skill`。
+2. 显式调用 Loji；支持自动触发时，可说「征酱，你好」。
+3. 如需本地记忆，按 [记忆与判断](#记忆与判断) 选择挡位并完成必要配置。
+
+v1.1.3 已验收项目级 Codex 的跨会话恢复；用户级 Codex、Claude Code、DeepSeek Harness 的跨会话恢复依赖宿主配置与实际工具能力，本轮未单独验收。
+
+> [!NOTE]
+> **只有聊天界面？** 将 `SKILL.md` 与所需 `references/` 文件作为对话上下文即可体验角色；自动触发、联网和本地记忆由客户端工具与权限决定。
+
+## 角色与使用
+
+**`常服` · `毛装` · `主唱` · `军服`**
+
+四种形态随话题自然切换。查看 [表达风格](references/STYLE.md) · [角色对话示例](examples/)。
+
+| 想做什么 | 这样说 |
+| --- | --- |
+| 唤起角色 | 「征酱，你好」 / 「用征酱的视角分析……」 |
+| 现实知识 | 「地球online」 / 「查一下」 / 「现实数据」 |
+| 暂停角色 | 「退出征酱模式」 / 「暂停角色扮演」 / 「进入维护模式」 |
+
+**地球online**：已处于 Loji 角色模式，或先明确提及 Loji / 征酱时触发现实知识模式，标注搜索结果状态；未进入角色模式时，裸"地球online"按普通查询处理，不冷启动角色。
+
+## 记忆与判断
+
+### 记忆挡位
+
+| 挡位 | 作用 |
+| --- | --- |
+| `off` | 不读取记忆正文 |
+| `read_only` | 有效授权下读取，不写入、删除、归档或迁移正文 |
+| `explicit` | 有效授权下读取，仅用户明确要求时写入 |
+| `auto` | 按记忆规则与实际授权自动管理 |
+
+首次缺少合法已确认状态时，Loji 先回答当前问题，再询问挡位；不默认 `auto`。独立 `memory.state.json` 保存已确认选择。受支持宿主通过已确认的固定目录与恢复许可在后续会话恢复挡位；每次正文操作持协作锁重新核对状态，并与当前宿主限制取交集。状态缺失、损坏、未确认或 consent 无效时拒绝正文访问。保存状态不是无条件授权，也不能授予宿主权限；不从正文、备份或任意工作区同名文件恢复授权。切换与重置只改变状态，不删除或迁移正文。保存失败时暂停当前会话旧授权，后续会话以实际持久化状态为准。
+
+[完整授权与恢复合同](references/MEMORY.md#51-独立状态与可信宿主恢复v113) · [Codex 一次性接入](references/CODEX_SETUP.md)
+
+<details>
+<summary><b>初始化本地记忆（可选）</b></summary>
+
+仅在用户明确选择允许写入的挡位、宿主许可后执行。未选择、`off` 或 `read_only` 时不初始化正文。在 `loji-skill` 目录执行（Python 3.11+，macOS / Linux 也可使用 `python3`）：
+
+```bash
 python scripts/init_memory.py --template memory.template.md --target memory.md
 ```
 
-脚本只在 `memory.md` 不存在时创建文件；文件已存在时退出码为 `2`，不会覆盖。暂时不用本地记忆或没有 Python，可跳过此步。
+仅创建不存在的 `memory.md`，已存在时退出码为 `2`，不覆盖。
 
-### 3. 验证加载
+</details>
 
-在客户端的技能列表中确认有 `loji-skill`，然后在新会话里显式调用它，或在支持自动触发的客户端里说「征酱，你好」。联网和持久记忆取决于客户端提供的工具与权限。
+### 常用记忆口令
 
-**只有聊天界面？** 如果你的 ChatGPT、Claude、DeepSeek 或其他客户端没有技能导入入口，可以把 `SKILL.md` 和所需的 `references/` 文件作为对话上下文提供。这样可以体验角色；客户端不会因此获得自动触发或本地记忆能力。
+在 Loji 角色模式或明确提及 Loji 后，按当前授权使用：
 
-### 从旧目录 `Loji-skill` 迁移
+| 口令 | 效果 |
+| --- | --- |
+| 「记住……」 | 写入记忆 |
+| 「你记得我什么？」 / 「显示记忆摘要」 | 查看记忆 |
+| 「忘记……」 / 「删除关于 X 的记忆」 | 精确删除 |
+| 「清空近期上下文」 | 清理临时上下文 |
+| 「清空所有记忆」 | 清空记忆文件（需确认） |
+| 「记忆健康检查」 / 「检查记忆」 | 输出健康度报告 |
+| 「恢复记忆：X」 | 从归档重新激活 |
 
-以下步骤仅适用于 Claude Code 的旧安装目录 `~/.claude/skills/Loji-skill`。
+`memory.md` 保存在本地。同一安装目录的多个会话可共用文件，访问仍受各会话授权与宿主能力约束。不同机器或不同安装目录各自独立，不自动同步。换机器可手动迁移正文，先确认新宿主的授权，不直接复制旧授权状态。
 
-如果已经安装过旧版本，不要直接重新 clone 覆盖。以下步骤按顺序执行；任何一步失败都停止，不移动原目录。
+### 判断账本与事件记忆
 
-```bash
-OLD="$HOME/.claude/skills/Loji-skill"
-NEW="$HOME/.claude/skills/loji-skill"
-STAMP="$(date +%Y%m%d-%H%M%S)"
-BACKUP="$HOME/loji-memory-backup-$STAMP"
+- `JUDGMENTS.md` 记录判断、依据与修订历史，继承宿主认可的独立记忆状态；`off` 或状态未知时不读取。授权允许时可从 `judgments.template.md` 创建，校验命令为 `python scripts/validate_judgments.py JUDGMENTS.md`，Agent 代为校验仍须先取得读取授权；校验工具不授予权限。v1.1.4 区分直接证据、可核查产物、来源观点与未验证印象，不编造引用；部分依据失效时重新评估剩余依据，修订保留旧判断和链路。见 [判断连续性](references/JUDGMENT_CONTINUITY.md)。
+- `context --matters` 在 v1.1.4 继续按严格 JSON 数组精确匹配稳定事项名，大小写敏感；不做模糊匹配。不完整集合可能遗漏相关冲突；它不是安全隔离，也不自动识别项目。详见 [事件记忆](references/EPISODIC_MEMORY.md)。
+- **完整项目恢复**联合普通 Memory 的目标、预算、期限、状态、待办与 `context` 校验后的有效经历、判断依据和未决冲突。项目名不等于事项名；事项集合不完整且用户未限定范围时，只允许在当前授权、固定记忆目录内检查一次现有全范围 `context`，不能全盘搜索、跨目录扫描或扩大权限；归属不明时保留不确定性。见 [上下文加载](references/CONTEXT_LOADING.md)。
+- **只读整理建议**区分重复、补强候选、不同时间事件及冲突，不自动合并或删除。永久、未决、纠正链及用户要求保留的记录受保护；建议不是写入授权。用户要求遗忘与证据失效分开处理。见 [记忆整理](references/MEMORY_CURATION.md)。
 
-hash_file() {
-  if command -v sha256sum >/dev/null 2>&1; then
-    sha256sum "$1" | awk '{print $1}'
-  elif command -v shasum >/dev/null 2>&1; then
-    shasum -a 256 "$1" | awk '{print $1}'
-  else
-    echo "no sha256 tool" >&2
-    return 1
-  fi
-}
+> [!WARNING]
+> 本地私人记忆、判断账本及派生文件、授权状态、私人绝对路径和含真实恢复许可的本地配置不要提交到公开 Git 仓库。完整规则见 [MEMORY](references/MEMORY.md) 与 [CODEX_SETUP](references/CODEX_SETUP.md)。
 
-# 1. 每次使用唯一备份目录；已存在则停止，不覆盖旧备份
-mkdir "$BACKUP" || { echo "backup directory exists; stop"; exit 1; }
-chmod 700 "$BACKUP" 2>/dev/null || true
+## 文档与开发
 
-# 2. 复制并校验；失败或哈希不一致必须停止
-if [ -f "$OLD/memory.md" ]; then
-  cp -p "$OLD/memory.md" "$BACKUP/memory.md" || { echo "backup copy failed; stop"; exit 1; }
-  SRC_HASH="$(hash_file "$OLD/memory.md")" || exit 1
-  BAK_HASH="$(hash_file "$BACKUP/memory.md")" || exit 1
-  [ "$SRC_HASH" = "$BAK_HASH" ] || { echo "hash mismatch; stop"; exit 1; }
-fi
+| 文档 | 内容 |
+| --- | --- |
+| [SKILL.md](SKILL.md) | 角色定义、运行规则与入口 |
+| [LORE](references/LORE.md) · [STYLE](references/STYLE.md) | 世界观、表达风格 |
+| [MEMORY](references/MEMORY.md) · [JUDGMENT_CONTINUITY](references/JUDGMENT_CONTINUITY.md) | 记忆授权与判断连续性 |
+| [CODEX_SETUP](references/CODEX_SETUP.md) · [EPISODIC_MEMORY](references/EPISODIC_MEMORY.md) | 宿主接入与事件记忆 |
+| [CONTEXT_LOADING](references/CONTEXT_LOADING.md) · [MEMORY_CURATION](references/MEMORY_CURATION.md) | 联合项目恢复、按需加载与只读整理建议 |
+| [评测协议](research/evals/BEHAVIOR_EVAL_PROTOCOL.md) · [评测索引](research/evals/INDEX.md) | 固定场景、原生执行证据与独立判定 |
+| [SAFETY_BOUNDARIES](references/SAFETY_BOUNDARIES.md) · [STATE_MACHINES](references/STATE_MACHINES.md) | 安全规则与状态机 |
+| [迁移指南](docs/MIGRATION.md) · [变更记录](CHANGELOG.md) · [路线图](ROADMAP.md) | 维护与版本演进 |
 
-# 3. 校验通过后，才判断是否移动；大小写不敏感时旧/新可能是同一目录
-dir_id() {
-  if stat -c '%d:%i' "$1" >/dev/null 2>&1; then
-    stat -c '%d:%i' "$1"
-  elif stat -f '%d:%i' "$1" >/dev/null 2>&1; then
-    stat -f '%d:%i' "$1"
-  else
-    return 1
-  fi
-}
-same_dir() {
-  [ -d "$1" ] && [ -d "$2" ] || return 1
-  local a b
-  a="$(dir_id "$1")" || return 1
-  b="$(dir_id "$2")" || return 1
-  [ "$a" = "$b" ]
-}
+<details>
+<summary><b>仓库结构</b></summary>
 
-if [ -d "$OLD" ] && [ -e "$NEW" ] && ! same_dir "$OLD" "$NEW"; then
-  echo "both directories exist; stop and compare memory.md manually"; exit 1
-fi
-if [ -d "$OLD" ] && [ ! -e "$NEW" ]; then
-  mv "$OLD" "$NEW" || { echo "rename failed; old directory preserved"; exit 1; }
-fi
-
-# 4. 移动后再次校验新目录中的 memory.md
-if [ -f "$NEW/memory.md" ] && [ -f "$BACKUP/memory.md" ]; then
-  NEW_HASH="$(hash_file "$NEW/memory.md")" || exit 1
-  BAK_HASH="$(hash_file "$BACKUP/memory.md")" || exit 1
-  [ "$NEW_HASH" = "$BAK_HASH" ] || { echo "post-move hash mismatch; recover from $BACKUP"; exit 1; }
-fi
+```text
+loji-skill/
+├── SKILL.md
+├── memory.template.md
+├── judgments.template.md
+├── references/        # 按需加载的角色、记忆与行为规则
+├── scripts/           # 本地初始化、状态与验证工具
+├── examples/          # 角色行为示例（非固定模板）
+├── research/          # 研究、考据和评估资料
+├── tests/             # 测试
+├── docs/              # 迁移指南
+└── assets/            # 首页视觉资源
 ```
 
-Windows：
+完整安装保留运行文件相对路径；研究与示例资料不是日常运行必需项。
 
-```powershell
-$old = "$env:USERPROFILE\.claude\skills\Loji-skill"
-$new = "$env:USERPROFILE\.claude\skills\loji-skill"
-$backup = "$env:USERPROFILE\loji-memory-backup-$(Get-Date -Format yyyyMMdd-HHmmss)"
+</details>
 
-# 唯一备份目录；已存在则 New-Item 失败并停止
-New-Item -ItemType Directory -Path $backup -ErrorAction Stop | Out-Null
-
-if (Test-Path "$old\memory.md") {
-  Copy-Item "$old\memory.md" "$backup\memory.md" -ErrorAction Stop
-  $src = (Get-FileHash "$old\memory.md" -Algorithm SHA256).Hash
-  $bak = (Get-FileHash "$backup\memory.md" -Algorithm SHA256).Hash
-  if ($src -ne $bak) { Write-Error "hash mismatch; stop"; exit 1 }
-}
-
-# 仅当你已独立确认两个路径是同一目录后，才把它改为 $true。
-# 仅大小写不同的路径字符串不能作为同一目录的证明。
-$SameDirectoryConfirmed = $false
-
-if ((Test-Path $old) -and (Test-Path $new)) {
-  if (-not $SameDirectoryConfirmed) {
-    Write-Error 'both paths exist. Directory identity cannot be proven from case-insensitive path strings; stop and verify manually. If confirmed, set $SameDirectoryConfirmed = $true and rerun.'
-    exit 1
-  }
-  Write-Host "same directory confirmed manually; skipping rename"
-} elseif ((Test-Path $old) -and -not (Test-Path $new)) {
-  Rename-Item -LiteralPath $old -NewName (Split-Path $new -Leaf) -ErrorAction Stop
-}
-
-# 移动后再次校验
-if ((Test-Path "$new\memory.md") -and (Test-Path "$backup\memory.md")) {
-  $newHash = (Get-FileHash "$new\memory.md" -Algorithm SHA256).Hash
-  $bakHash = (Get-FileHash "$backup\memory.md" -Algorithm SHA256).Hash
-  if ($newHash -ne $bakHash) { Write-Error "post-move hash mismatch; recover from $backup"; exit 1 }
-}
-```
-
-- 同一天重复运行使用时间戳目录，不会覆盖先前备份；`mkdir`/`New-Item` 已存在即失败。
-- 复制失败、哈希工具缺失或哈希不一致时立即停止。
-- 打印哈希不算校验；必须像上面一样比较并检查退出状态。
-- 校验成功前不移动原目录；移动后再次校验。
-- POSIX 使用设备号 + inode 判断目录身份；`stat` 不可用时安全停止。
-- Windows：两条路径都存在时脚本停止。仅大小写不同的字符串不被当作同一目录的证明；只有你独立确认后，才可把 `$SameDirectoryConfirmed` 改为 `$true` 并重跑。
-- 不自动删除旧目录；失败时保留旧目录与外部备份，按备份路径人工恢复。
-
-## 使用
-
-对话中直接叫"征酱"即可触发。也可以说"用征酱的视角分析……"。
-
-四种形态自然切换：
-- **常服** — 日常聊天和分析
-- **毛装** — 严肃话题
-- **主唱** — 活泼表达
-- **军服** — 简洁决策
-
-**地球online**：在已处于 Loji 角色模式，或先提及 Loji/征酱后，说"地球online""查一下""现实数据"可切换到现实知识模式（会诚实标注搜索结果状态，不假装实时检索）。未进入角色模式时，裸"地球online"按普通查询处理，不冷启动角色。分析中国财政/经济/政策问题时，Loji 会调用其现实制度知识底座。
-
-管理记忆（在 Loji 角色模式下，或明确提及 Loji 后）：
-- "记住……" — 写入记忆
-- "你记得我什么？" / "显示记忆摘要" — 查看记忆
-- "忘记……" / "删除关于 X 的记忆" — 精确删除
-- "清空近期上下文" — 只清临时上下文
-- "清空所有记忆" — 清空整个文件（需确认）
-- "记忆健康检查" / "检查记忆" — 输出记忆健康度报告
-- "恢复记忆：X" — 从归档重新激活
-
-**维护模式**：说"退出征酱模式""暂停角色扮演""进入维护模式"，Loji 会暂停角色输出，以普通助手身份回应（便于调试或处理非角色任务）。
-
-## 文件说明
-
-### 角色运行文件（Skill 生效必需）
-
-- `SKILL.md` — 人格定义与规则（运行时权威）
-- `memory.template.md` — 记忆 schema 骨架（可用 `scripts/init_memory.py` 安全初始化 `memory.md`）
-- `judgments.template.md` — 私人判断账本模板（复制为 `JUDGMENTS.md` 后使用；账本及派生文件已被 Git 忽略）
-- `references/MEMORY.md` — 记忆行为规则（按需加载）
-- `references/MEMORY_CURATION.md` — 重复识别、生命周期与只读整理建议
-- `references/CONTEXT_LOADING.md` — 加载顺序、按需读取与事项选择
-- `references/JUDGMENT_CONTINUITY.md` — 判断连续性、改判、证据分层与有限主动关联规则（按需加载）
-- `scripts/init_memory.py` — 安全初始化 `memory.md`，不覆盖已有文件
-- `scripts/validate_judgments.py` — 校验 `JUDGMENTS.md`，不写入、不读取真实用户的授权状态
-- `references/LORE.md` — 世界观与背景
-- `references/STYLE.md` — 表达风格详情
-- `references/SAFETY_BOUNDARIES.md` — 安全规则
-- `references/STATE_MACHINES.md` — 形态/路线/记忆/成长弧的状态机定义
-- `references/domain-knowledge.md` — 现实领域知识底座
-
-### 开发与研究资料（不影响日常使用）
-
-- `research/` — 深度研究资料：分析模型（`ANALYSIS_MODELS.md`）、政治场景规则（`POLITICAL_CONTEXT.md`）、来源考据（`SOURCES.md`、`canon/`）、评估框架（`evals/`）、人格故障模式（`PERSONA_FAILURE_MODES.md`）、证据映射（`evidence/`）
-- `examples/` — 角色对话示例（`analysis.md`、`casual.md`），展示行为倾向，非固定模板
-
-## 记忆范围
-
-`memory.md` 是本地文件，记在同一台机器上：
-
-| 场景 | 是否互通 |
-|------|---------|
-| 多个会话访问同一安装目录 | 共用同一个 `memory.md` |
-| 不同机器 | ❌ 不互通（各自独立的文件） |
-| 不同客户端安装在各自的目录 | 各用自己的 `memory.md`，不会自动同步 |
-
-> 换机器或换 Agent 时，可以手动复制 `memory.md` 过去——但注意不要提交到 git。
-
-**判断账本**：`JUDGMENTS.md` 记录 Loji 自己的判断、依据和修订历史，同样只保存在本地。它与 `memory.md` 继承同一宿主认可的独立状态授权；`off` 或状态未知时不读取。复制 `judgments.template.md` 创建账本，不要提交到 git。校验命令：`python scripts/validate_judgments.py JUDGMENTS.md`。
+**能力边界**：Loji-skill 是虚构角色技能，依赖宿主模型与工具运行；不是独立模型或操作系统隔离工具。v1.1.4 的验收范围与具体接入要求见 [发布说明](https://github.com/ASER-ho/Loji-skill/releases/tag/v1.1.4) 和 [CODEX_SETUP](references/CODEX_SETUP.md)。
 
 ## 许可
 
-原创内容使用 MIT 许可证。TFR 角色设定归原权利方所有。详见 [LICENSE](LICENSE) 和 [ATTRIBUTION.md](ATTRIBUTION.md)。
+原创内容使用 [MIT 许可证](LICENSE)。TFR 角色设定归原权利方所有，详见 [ATTRIBUTION](ATTRIBUTION.md)。
