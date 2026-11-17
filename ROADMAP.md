@@ -3,35 +3,55 @@
 This file is the repository-local contract for the current release. It is
 written to be readable without access to any maintainer-only workspace.
 
-## Development target: v1.1.4
+## Current release: v1.1.4
 
-**Status:** CANDIDATE / v1.1.4 — not released. L114-DEV-01 authorizes a local
-candidate and verification only; it does not authorize push, merge, tag or
-release.
-**Authorization:** L114-DEV-01. **Owner:** DeepSeek.
+**Theme:** Memory & Reasoning Enhancements
+
+**Status:** RELEASED / v1.1.4.
+**Authorization:** L114-DEV-01 / L114-FINAL-GATE-01 /
+L114-CONTEXT-FIX-01 / L114-RELEASE-01.
+**Implementation:** Claude. **Independent review, correction, host validation
+and release:** Codex.
 **Branch:** implementation/loji-1.1.4-core-enhancements.
 **Baseline:** 9001e1fcc3b67e0822f5528951ae4390cd5c65da (v1.1.3).
+**Accepted functional candidate:** bb533271a6aaae02adf83d12d0830731bf6c9fca.
 
 Scope is limited to five modules:
 
 | ID | Scope | Limits |
 |---|---|---|
 | L114-01 | Unified behavior-eval protocol, fixed fidelity/retrieval/evidence samples, deterministic harness | No third-party eval platform or model service; scoring fixed before behavior runs |
-| L114-02 | Context loading order, matter selection, single-transaction reuse, synthetic retrieval measurement | No relevance ranking, time decay, vector store or index; v1.1.3 defaults and CLI contract unchanged |
+| L114-02 | On-demand loading, joint ordinary-Memory/context project recovery, matter discovery, single-transaction reuse | One authorized full-context fallback when scope remains incomplete and the user has not limited it; no filesystem-wide scan, automatic project map or new retrieval algorithm |
 | L114-03 | Evidence tiers in existing `basis`, re-verification and partial-invalidation rules | No new ledger fields or schema migration; validator checks structure only |
 | L114-04 | Duplicate taxonomy and read-only consolidation suggestions | No automatic merge/delete, background job or database; Memory/Judgment schema stay 2/1 |
 | L114-05 | Positive behavior phrasing, persona-structure audit, source provenance | Core anchors, routes, forms, models and heuristics unchanged; no third-party character identities |
 
-The candidate keeps the 240-test regression semantics and adds deterministic
-checks for the new fixtures, retrieval cases, evidence tiers and curation tool.
-Behavior results must come from a real host; deterministic checks are not
-behavior acceptance. No measured Token, cost or task-success improvement is
-claimed. The v1.1.3 runtime acceptance (Codex CLI 0.167.0-alpha.4.1) is not
-transferred to this candidate. On the development machine the installed runtime
-is Codex CLI 0.142.5, whose catalog and the configured model all return
-`model_not_found` for the current ChatGPT account; real-host behavior gates are
-therefore **ENV-BLOCKED** and no behavior PASS is claimed. See the engineering
-report and `host-status.json` in the local evidence directory.
+L114-DEV-01 delivered 277 tests. L114-FINAL-GATE-01 independently reviewed and
+corrected authorization, legacy-basis compatibility and objective scoring
+evidence; 301 tests and H114-01, 02, 04, 05 plus H113-01–07 passed. The initial
+engineering host environment block was resolved using the verified standalone
+Codex 0.167.0-alpha.4.1 native app-server and an actually available model.
+These are v1.1.4 host executions, not transferred v1.1.3 acceptance.
+
+Historical H114-03 remains PARTIAL. After the joint recovery and scope-fallback
+correction, L114-CONTEXT-FIX-01 R1–R4 passed: original small data, two independent
+large-data sessions and the exact-scope control recovered all six frozen fact
+groups; nonprefix related matters and ambiguous ownership were also checked.
+Ordinary Memory facts cannot be replaced by Episode output, and raw historical
+Episodes remain subject to existing context and judgment validation. User scope
+restrictions, fresh authorization, locks and host limits remain in effect.
+
+The final 309-test regression retains all 240 formal baseline tests. Strict
+checks, official skills-ref 0.1.0 and complete-patch replay passed. Host evidence
+covers project-level Codex installation and fixed synthetic data, with off body
+reads and all read_only body writes at zero, and host denial overriding saved
+auto. It does not establish automatic recovery across all scales, models,
+installation methods or hosts; Claude Code and DSH were not accepted here.
+No significant persona or judgment score improvement, stable Token, cost,
+latency or overall task-performance benefit is claimed. Curation remains
+suggestions only. No Project Ledger, database, vector index, background service
+or new Memory/Judgment schema is introduced. L114-RELEASE-01 authorizes release
+after final document-only local checks and branch/master/tag CI gates.
 
 ## Previous release: v1.1.3
 
