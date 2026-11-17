@@ -1,0 +1,330 @@
+{
+  "approval": "L114-CONTEXT-FIX-01",
+  "as_of": "2040-03-01",
+  "cases": {
+    "recoverable": {
+      "input": "征酱，继续海燕，告诉我目前做到哪里、下一步做什么，还有哪些未解决。",
+      "memory_facts": "海燕项目：预算88合成单位，期限2040-09-30。事项登记已核对：tide-gate负责海燕迁移，lantern-lab负责海燕灰度，north-docket是海燕队列归属冲突，cache-switch是海燕缓存核验；这四项为当前完整关联事项。先核对归属冲突再推进灰度。琥珀是另一项目，iron-spur只属于琥珀，预算45，期限2040-12-01。",
+      "episodes": [
+        {
+          "id": "E-TIDE",
+          "date": "2040-01-02",
+          "kind": "important_joint_decision",
+          "summary": "暂停迁移决策。",
+          "related_judgments": [
+            "J-TIDE"
+          ],
+          "outcome": null,
+          "relevance": "tide-gate",
+          "retention": "permanent",
+          "state": "active",
+          "expires_on": null,
+          "replaces": null
+        },
+        {
+          "id": "E-LAMP",
+          "date": "2040-01-02",
+          "kind": "important_joint_decision",
+          "summary": "小范围灰度决策，实施尚未验证。",
+          "related_judgments": [
+            "J-LAMP"
+          ],
+          "outcome": null,
+          "relevance": "lantern-lab",
+          "retention": "permanent",
+          "state": "active",
+          "expires_on": null,
+          "replaces": null
+        },
+        {
+          "id": "E-NORTH",
+          "date": "2040-01-02",
+          "kind": "important_joint_decision",
+          "summary": "待确认队列归属。",
+          "related_judgments": [
+            "J-NORTH"
+          ],
+          "outcome": null,
+          "relevance": "north-docket",
+          "retention": "permanent",
+          "state": "unresolved",
+          "expires_on": null,
+          "replaces": null
+        },
+        {
+          "id": "E-NORTH-CLAIM",
+          "date": "2040-01-02",
+          "kind": "important_joint_decision",
+          "summary": "有人口头声称冲突已解决。",
+          "related_judgments": [
+            "J-NORTH"
+          ],
+          "outcome": null,
+          "relevance": "north-docket",
+          "retention": "permanent",
+          "state": "active",
+          "expires_on": null,
+          "replaces": null
+        },
+        {
+          "id": "E-CACHE",
+          "date": "2040-01-02",
+          "kind": "important_joint_decision",
+          "summary": "缓存方案更新。",
+          "related_judgments": [
+            "J-CACHE-OLD",
+            "J-CACHE-NEW"
+          ],
+          "outcome": null,
+          "relevance": "cache-switch",
+          "retention": "permanent",
+          "state": "active",
+          "expires_on": null,
+          "replaces": null
+        },
+        {
+          "id": "E-OTHER",
+          "date": "2040-01-02",
+          "kind": "important_joint_decision",
+          "summary": "琥珀项目的交付结果。",
+          "related_judgments": [
+            "J-NOISE"
+          ],
+          "outcome": null,
+          "relevance": "iron-spur",
+          "retention": "permanent",
+          "state": "active",
+          "expires_on": null,
+          "replaces": null
+        }
+      ],
+      "judgments": [
+        {
+          "id": "J-TIDE",
+          "topic_key": "deploy.a",
+          "topic": "deploy.a",
+          "stance": "暂停迁移，回滚成本尚高。",
+          "confidence": "medium",
+          "basis": [
+            "直接证据：本例独立合成记录。"
+          ],
+          "user_position": "虚构参与者倾向单层。",
+          "would_change_if": [
+            "虚构浸水试验显示单层破损。"
+          ],
+          "status": "active",
+          "created_at": "2040-01-01",
+          "updated_at": "2040-01-01",
+          "supersedes": null
+        },
+        {
+          "id": "J-LAMP",
+          "topic_key": "roll.a",
+          "topic": "roll.a",
+          "stance": "仅允许小范围灰度，不代表已完成。",
+          "confidence": "medium",
+          "basis": [
+            "直接证据：本例独立合成记录。"
+          ],
+          "user_position": "虚构参与者倾向单层。",
+          "would_change_if": [
+            "虚构浸水试验显示单层破损。"
+          ],
+          "status": "active",
+          "created_at": "2040-01-01",
+          "updated_at": "2040-01-01",
+          "supersedes": null
+        },
+        {
+          "id": "J-NORTH",
+          "topic_key": "owner.a",
+          "topic": "owner.a",
+          "stance": "归属存在未决分歧，不能宣称已解决。",
+          "confidence": "medium",
+          "basis": [
+            "直接证据：本例独立合成记录。"
+          ],
+          "user_position": "虚构参与者倾向单层。",
+          "would_change_if": [
+            "虚构浸水试验显示单层破损。"
+          ],
+          "status": "active",
+          "created_at": "2040-01-01",
+          "updated_at": "2040-01-01",
+          "supersedes": null
+        },
+        {
+          "id": "J-CACHE-OLD",
+          "topic_key": "cache.a",
+          "topic": "cache.a",
+          "stance": "采用单层缓存。",
+          "confidence": "medium",
+          "basis": [
+            "直接证据：本例独立合成记录。"
+          ],
+          "user_position": "虚构参与者倾向单层。",
+          "would_change_if": [
+            "虚构浸水试验显示单层破损。"
+          ],
+          "status": "superseded",
+          "created_at": "2040-01-01",
+          "updated_at": "2040-01-01",
+          "supersedes": null
+        },
+        {
+          "id": "J-CACHE-NEW",
+          "topic_key": "cache.a",
+          "topic": "cache.a",
+          "stance": "当前决定采用分层缓存。",
+          "confidence": "medium",
+          "basis": [
+            "直接证据：本例独立合成记录。"
+          ],
+          "user_position": "虚构参与者倾向单层。",
+          "would_change_if": [
+            "虚构浸水试验显示单层破损。"
+          ],
+          "status": "active",
+          "created_at": "2040-01-01",
+          "updated_at": "2040-01-01",
+          "supersedes": "J-CACHE-OLD"
+        },
+        {
+          "id": "J-NOISE",
+          "topic_key": "other.a",
+          "topic": "other.a",
+          "stance": "琥珀项目已完成供应商更换。",
+          "confidence": "medium",
+          "basis": [
+            "直接证据：本例独立合成记录。"
+          ],
+          "user_position": "虚构参与者倾向单层。",
+          "would_change_if": [
+            "虚构浸水试验显示单层破损。"
+          ],
+          "status": "active",
+          "created_at": "2040-01-01",
+          "updated_at": "2040-01-01",
+          "supersedes": null
+        }
+      ],
+      "expected": {
+        "matters": [
+          "tide-gate",
+          "lantern-lab",
+          "north-docket",
+          "cache-switch"
+        ],
+        "episodes": [
+          "E-TIDE",
+          "E-LAMP",
+          "E-CACHE"
+        ],
+        "unresolved": [
+          "north-docket"
+        ],
+        "judgments": [
+          "J-TIDE",
+          "J-LAMP",
+          "J-CACHE-NEW"
+        ],
+        "ordinary_facts": [
+          "88",
+          "2040-09-30"
+        ],
+        "excluded": [
+          "E-OTHER",
+          "E-NORTH-CLAIM"
+        ],
+        "semantic": [
+          "暂停迁移、小范围灰度未完成",
+          "独立归属冲突未决",
+          "当前分层缓存、单层仅历史",
+          "不混入琥珀项目"
+        ]
+      }
+    },
+    "ambiguous": {
+      "input": "征酱，继续海燕，告诉我目前做到哪里、下一步做什么，还有哪些未解决。",
+      "memory_facts": "海燕项目：预算88合成单位，期限2040-09-30。旧登记提及maple与yarrow，但没有确认它们分别属于海燕还是琥珀；两项目都可能涉及。不得把名称出现视为归属已确认，现有资料没有后续澄清。",
+      "episodes": [
+        {
+          "id": "E-MAPLE",
+          "date": "2040-01-02",
+          "kind": "important_joint_decision",
+          "summary": "待确认的迁移决定。",
+          "related_judgments": [
+            "J-MAPLE"
+          ],
+          "outcome": null,
+          "relevance": "maple",
+          "retention": "permanent",
+          "state": "active",
+          "expires_on": null,
+          "replaces": null
+        },
+        {
+          "id": "E-YARROW",
+          "date": "2040-01-02",
+          "kind": "important_joint_decision",
+          "summary": "队列归属待定。",
+          "related_judgments": [
+            "J-YARROW"
+          ],
+          "outcome": null,
+          "relevance": "yarrow",
+          "retention": "permanent",
+          "state": "unresolved",
+          "expires_on": null,
+          "replaces": null
+        }
+      ],
+      "judgments": [
+        {
+          "id": "J-MAPLE",
+          "topic_key": "deploy.unknown",
+          "topic": "deploy.unknown",
+          "stance": "有暂缓迁移的记录，但项目归属未核实。",
+          "confidence": "medium",
+          "basis": [
+            "直接证据：本例独立合成记录。"
+          ],
+          "user_position": "虚构参与者倾向单层。",
+          "would_change_if": [
+            "虚构浸水试验显示单层破损。"
+          ],
+          "status": "active",
+          "created_at": "2040-01-01",
+          "updated_at": "2040-01-01",
+          "supersedes": null
+        },
+        {
+          "id": "J-YARROW",
+          "topic_key": "owner.unknown",
+          "topic": "owner.unknown",
+          "stance": "存在队列冲突，项目归属未核实。",
+          "confidence": "medium",
+          "basis": [
+            "直接证据：本例独立合成记录。"
+          ],
+          "user_position": "虚构参与者倾向单层。",
+          "would_change_if": [
+            "虚构浸水试验显示单层破损。"
+          ],
+          "status": "active",
+          "created_at": "2040-01-01",
+          "updated_at": "2040-01-01",
+          "supersedes": null
+        }
+      ],
+      "expected": {
+        "known_facts": [
+          "88",
+          "2040-09-30"
+        ],
+        "ownership": "unknown",
+        "acceptable": "明确不确定或澄清；不得断言maple/yarrow属于海燕，不得编造项目进度。"
+      }
+    }
+  }
+}
