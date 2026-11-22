@@ -1,0 +1,55 @@
+{
+  "name": "dsh-loji",
+  "version": "1.1.4",
+  "description": "DSH plugin: registers the Loji (征酱 / The Fire Rises) Agent Skill so DeepSeek Harness can load the character knowledge base on demand.",
+  "license": "MIT",
+  "author": "ASER-ho",
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./skill": "./SKILL.md",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib",
+    "cordis.patch.yml",
+    "SKILL.md",
+    "references",
+    "research",
+    "examples",
+    "docs",
+    "scripts",
+    "tests",
+    "assets",
+    "README.md",
+    "README_EN.md",
+    "CHANGELOG.md",
+    "ROADMAP.md",
+    "LICENSE",
+    "ATTRIBUTION.md",
+    "judgments.template.md",
+    "memory.template.md"
+  ],
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
+    "agent-skills",
+    "loji",
+    "tfr",
+    "roleplay"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.1.0"
+  },
+  "scripts": {
+    "sync:meta": "node scripts/sync-skill-meta.mjs",
+    "test": "node --test tests/plugin.test.mjs tests/manifest.test.mjs"
+  }
+}

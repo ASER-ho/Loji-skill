@@ -187,6 +187,17 @@ v1.1.3 已验证项目级安装与一次性配置；v1.1.4 在项目级 Codex �
 }
 ```
 
+**作为 DSH 插件安装**
+
+仓库根带有 `dsh.bundle` 清单与 `cordis.patch.yml`，可直接用 DSH 的插件管理器安装：
+
+```bash
+dsh plugin add github:ASER-ho/Loji-skill
+# 等价写法：dsh plugin add https://github.com/ASER-ho/Loji-skill
+```
+
+安装后插件把本仓库的 `SKILL.md` 注册为 `loji-skill` 技能，资源根指向仓库自身，正文里的 `references/`、`research/` 相对路径照常可用，无需手动复制到技能目录。该插件只提供技能，不注入人格：人格由你的 DSH 部署配置或 Agent Preset 决定。若你已把仓库克隆进 `~/.agents/skills/loji-skill` 这类技能根，文件系统来源优先级更高，插件不会覆盖它。
+
 默认目录为 `~/.dsh/skills`，上述命令遵守已设置的 `DSH_HOME`。启用默认技能目录时也可使用 `~/.agents/skills`，或 `DSH_AGENTS_HOME` 下的 `skills`；自定义目录按 [客户端文档](https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/skill/skill-filesystem/README.md) 配置。本版本尚未完成 DeepSeek Harness 的同等跨会话恢复验收。
 
 </details>

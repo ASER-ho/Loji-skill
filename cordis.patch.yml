@@ -1,0 +1,10 @@
+# dsh-loji bundle patch
+#
+# Mounted automatically by `dsh plugin add <spec>` (bundle layer).
+# Mounting by hand: add the same insert entry to <dshHome>/profiles/<profile>/cordis.patch.yml.
+#
+# The entry starts this package's lib/index.js, which registers the bundled
+# SKILL.md as the `loji-skill` Agent Skill through ctx.skills.registerProvider.
+- insert:
+    - id: loji-skill
+      name: dsh-loji
