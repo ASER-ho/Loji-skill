@@ -32,3 +32,11 @@ jobs:
 
       - name: Test loji-dsh adapter
         run: npm test
+
+      - name: Check generated DSH preset
+        run: npm run check:preset
+
+      - name: Parse DSH preset with safe YAML tags
+        run: |
+          python -m pip install pyyaml
+          python loji-dsh/scripts/validate_patch.py

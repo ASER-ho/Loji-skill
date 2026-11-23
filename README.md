@@ -196,7 +196,7 @@ dsh plugin add github:ASER-ho/Loji-skill
 # 等价写法：dsh plugin add https://github.com/ASER-ho/Loji-skill
 ```
 
-新包名 `loji-dsh`、版本 `1.0.0`；技能注册名始终为 `loji-skill`（当前技能版本 `1.1.4`）。插件直接读取根目录 `SKILL.md` 和相关资源，无需另存一份技能。未来角色模式 ID 为 `loji`、显示名「长征机/逻辑」；**本阶段尚未接入 Preset 或完成 DSH 端到端安装验收**。原 `dsh-loji` 插件若已安装，需先核对并移除旧插件，避免同名技能重复注册。用户自行安装的同名技能可能优先于随包版本。
+新包名 `loji-dsh`、版本 `1.0.0`；技能注册名始终为 `loji-skill`（当前技能版本 `1.1.4`）。插件直接读取根目录 `SKILL.md` 和相关资源，无需另存一份技能。本插件现已声明角色模式 ID `loji`、显示名「长征机/逻辑」，人格源自根目录 `SKILL.md` 的角色身份与行为规则。**仅完成代码与静态 CI 验证；尚未在 DSH Desktop 完成安装及实际对话验收。**原 `dsh-loji` 插件若已安装，需先核对并移除旧插件，避免同名技能重复注册。用户自行安装的同名技能可能优先于随包版本。
 
 默认目录为 `~/.dsh/skills`，上述命令遵守已设置的 `DSH_HOME`。启用默认技能目录时也可使用 `~/.agents/skills`，或 `DSH_AGENTS_HOME` 下的 `skills`；自定义目录按 [客户端文档](https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/skill/skill-filesystem/README.md) 配置。本版本尚未完成 DeepSeek Harness 的同等跨会话恢复验收。
 
