@@ -50,6 +50,8 @@
   "scripts": {
     "sync:meta": "node loji-dsh/scripts/sync-skill-meta.mjs",
     "check:meta": "node loji-dsh/scripts/sync-skill-meta.mjs --check",
-    "test": "node --test loji-dsh/tests/plugin.test.mjs loji-dsh/tests/manifest.test.mjs"
+    "test": "node --test loji-dsh/tests/*.test.mjs",
+    "gen:preset": "node loji-dsh/scripts/gen-preset-patch.mjs",
+    "check:preset": "node loji-dsh/scripts/gen-preset-patch.mjs --check"
   }
 }

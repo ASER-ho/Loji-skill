@@ -187,7 +187,7 @@ v1.1.3 validated project-level installation and configuration; v1.1.4's follow-u
 }
 ```
 
-**DSH plugin installation:** `dsh plugin add github:ASER-ho/Loji-skill`. The repo-root package `loji-dsh` is version `1.0.0`, with its adapter under [`loji-dsh/`](loji-dsh/README.md). It registers the stable skill ID `loji-skill` (bundled skill version `1.1.4`). Preset ID `loji` and display name `长征机/逻辑` are reserved, **not yet implemented or runtime-tested**. Check and remove old `dsh-loji` installations before installing the renamed package to avoid duplicate providers.
+**DSH plugin installation:** `dsh plugin add github:ASER-ho/Loji-skill`. The repo-root package `loji-dsh` is version `1.0.0`, with its adapter under [`loji-dsh/`](loji-dsh/README.md). It registers the stable skill ID `loji-skill` (bundled skill version `1.1.4`). The plugin now declares preset ID `loji`, display name `长征机/逻辑`, with its persistent persona generated from the canonical root `SKILL.md`. **Static CI checks do not establish DSH Desktop installation or conversation behavior.** Check and remove old `dsh-loji` installations before installing the renamed package to avoid duplicate providers.
 
 The default is `~/.dsh/skills`; the commands honor `DSH_HOME` when set. With default roots enabled, `~/.agents/skills` or the `skills` directory under `DSH_AGENTS_HOME` is also supported. Configure custom roots using the [client documentation](https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/skill/skill-filesystem/README.md). This release has not completed equivalent DeepSeek Harness session-restoration validation.
 
