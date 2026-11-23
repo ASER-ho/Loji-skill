@@ -12,7 +12,7 @@ test("generated DSH preset declaration contains both independent services",()=>{
   assert.match(text,/id: loji\n        name: 长征机\/逻辑/);
 });
 test("pinned upstream preset plugin tools are retained bytewise after persona swap",()=>{
-  const original=read("loji-dsh/presets/upstream/standard-0.2.3-alpha.2.patch.yml");
+  const original=read("loji-dsh/presets/upstream/standard-0.2.2-rc.1.patch.yml");
   const generated=read("loji-dsh/cordis.patch.yml");
   const tail=original.slice(original.indexOf("          - id: agent-instructions"));
   assert.ok(generated.endsWith(tail),"upstream tools differ from snapshot");

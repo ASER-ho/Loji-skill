@@ -21,7 +21,7 @@ const end=skill.indexOf("### 三、心智模型");
 if(start<0||end<=start)throw new Error("Persona source boundaries changed");
 const persona="你正在使用「长征机/逻辑」角色模式（Loji，亦称征酱）。角色设定是虚构模拟，不是真实自主意识。严守宿主安全规则和用户的实际权限；不声称已执行未执行的操作。\n\n"+
   skill.slice(start,end).trimEnd()+"\n";
-let text=read("loji-dsh/presets/upstream/standard-0.2.3-alpha.2.patch.yml");
+let text=read("loji-dsh/presets/upstream/standard-0.2.2-rc.1.patch.yml");
 text=replaceOnce(text,"- insert:\n    - id: preset-standard\n      name: '@deepseek-ai/dsh-agent-preset'","- insert:\n    - id: loji-skill\n      name: loji-dsh\n    - id: preset-loji\n      name: '@deepseek-ai/dsh-agent-preset'","preset declaration");
 text=replaceOnce(text,"        id: standard\n        order: 1","        id: loji\n        name: 长征机/逻辑\n        description: TFR 长征机/逻辑角色模式；常驻人格与按需加载 loji-skill。\n        order: 2","preset config");
 text=replaceOnce(text,"              prefix: You are a coding agent powered by the {{model}} model.","              prefix: |-\n"+persona.trimEnd().split("\n").map(x=>"                "+x).join("\n"),"persona prefix");

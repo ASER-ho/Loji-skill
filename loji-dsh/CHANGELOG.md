@@ -13,3 +13,5 @@
 - Added preset ID `loji` with display name `长征机/逻辑` alongside `loji-skill` provider.
 - Generated persona deterministically from canonical SKILL.md, pinned to DSH standard snapshot.
 - Added static YAML/schema checks and source-drift tests. DSH Desktop end-to-end behavior remains unverified.
+
+- Pin the verified DSH `0.2.2-rc.1` standard snapshot (22 plugins) to match the original target environment rather than using the newer `0.2.3-alpha.2` development template.

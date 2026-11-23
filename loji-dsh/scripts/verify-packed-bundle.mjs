@@ -25,7 +25,7 @@ const required = [
   "loji-dsh/lib/index.js",
   "loji-dsh/lib/skill-meta.json",
   "loji-dsh/cordis.patch.yml",
-  "loji-dsh/presets/upstream/standard-0.2.3-alpha.2.patch.yml",
+  "loji-dsh/presets/upstream/standard-0.2.2-rc.1.patch.yml",
   "loji-dsh/scripts/gen-preset-patch.mjs",
 ];
 for (const path of required) {
