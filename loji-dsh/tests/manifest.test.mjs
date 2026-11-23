@@ -25,5 +25,6 @@ test("DSH entrypoint, patch, and resources survive relocation",()=>{
   const patch=readFileSync(join(root,pkg.dsh.bundle.patch),"utf8");
   assert.match(patch,/id: loji-skill/);
   assert.match(patch,/name: loji-dsh/);
-  assert.doesNotMatch(patch,/id: preset-loji/);
+  assert.match(patch,/id: preset-loji/);
+  assert.match(patch,/name: 长征机\/逻辑/);
 });
