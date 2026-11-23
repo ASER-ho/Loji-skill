@@ -1,0 +1,5 @@
+# DSH adapter package: loji-dsh. The skill provider name stays loji-skill.
+# Character preset loji (长征机/逻辑) is reserved, not shipped here.
+- insert:
+    - id: loji-skill
+      name: loji-dsh
