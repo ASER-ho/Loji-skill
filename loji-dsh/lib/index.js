@@ -1,5 +1,5 @@
 /**
- * dsh-loji — DSH skill provider for the Loji-skill repository.
+ * loji-dsh — DSH skill provider for the Loji-skill repository.
  *
  * Registers the repository's `SKILL.md` as the `loji-skill` Agent Skill, with the
  * repository root as its resource base so `references/`, `research/` and the other
@@ -12,14 +12,14 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { dirname, join, resolve } from "node:path";
 
-/** Repository root: lib/index.js -> root. Keeps the bundle relocatable. */
-const PACKAGE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+/** Repository root is two levels above loji-dsh/lib. */
+const PACKAGE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const SKILL_FILE = join(PACKAGE_ROOT, "SKILL.md");
-const META_FILE = join(PACKAGE_ROOT, "lib", "skill-meta.json");
+const META_FILE = join(PACKAGE_ROOT, "loji-dsh", "lib", "skill-meta.json");
 
 /** Provider id; also the plugin's stable name. */
 const PROVIDER_NAME = "loji-skill";
-/** @deepseek-ai/dsh-skill BUNDLED_SKILL_RANK — packaged skills outrank user roots. */
+/** Bundled rank 600; lower-rank filesystem providers may take precedence. */
 const BUNDLED_SKILL_RANK = 600;
 
 const META = JSON.parse(readFileSync(META_FILE, "utf8"));

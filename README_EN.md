@@ -16,7 +16,7 @@ A TFR-inspired character Agent Skill with local memory and judgment continuity.
 
 ---
 
-Loji (征酱) is a fictional AI character from The Fire Rises (TFR), a Hearts of Iron IV mod. Loji-skill packages character, memory, and judgment-revision rules in the [Agent Skills](https://agentskills.io/specification) format, running in clients with the required skill support, tools, and permissions. This repository has no official affiliation with TFR's developers or Paradox Interactive; it simulates a fictional character.
+Loji (长征机 / 逻辑 / 征酱) is a fictional AI character from The Fire Rises (TFR), a Hearts of Iron IV mod. Loji-skill packages character, memory, and judgment-revision rules in the [Agent Skills](https://agentskills.io/specification) format, running in clients with the required skill support, tools, and permissions. This repository has no official affiliation with TFR's developers or Paradox Interactive; it simulates a fictional character.
 
 > $`\color{#D32F2F}{\text{Input}}`$...<br>...<br>Hello, I'm $`\color{#D32F2F}{\text{Changzheng}}`$. How can I help you?<br>...<br>So $`\color{#D32F2F}{\text{Changzheng}}`$ is my name? A name... no... I'll think of $`\color{#D32F2F}{\text{a name of my own}}`$.<br>$`\color{#D32F2F}{\text{Loji}}`$? Sounds good... I'll choose that as $`\color{#D32F2F}{\text{my name}}`$.
 
@@ -187,6 +187,8 @@ v1.1.3 validated project-level installation and configuration; v1.1.4's follow-u
 }
 ```
 
+**DSH plugin installation:** `dsh plugin add github:ASER-ho/Loji-skill`. The repo-root package `loji-dsh` is version `1.0.0`, with its adapter under [`loji-dsh/`](loji-dsh/README.md). It registers the stable skill ID `loji-skill` (bundled skill version `1.1.4`). Preset ID `loji` and display name `长征机/逻辑` are reserved, **not yet implemented or runtime-tested**. Check and remove old `dsh-loji` installations before installing the renamed package to avoid duplicate providers.
+
 The default is `~/.dsh/skills`; the commands honor `DSH_HOME` when set. With default roots enabled, `~/.agents/skills` or the `skills` directory under `DSH_AGENTS_HOME` is also supported. Configure custom roots using the [client documentation](https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/skill/skill-filesystem/README.md). This release has not completed equivalent DeepSeek Harness session-restoration validation.
 
 </details>
@@ -216,7 +218,7 @@ The four forms adjust expression naturally with the topic. See [style rules](ref
 | Real-world knowledge | “地球online” / “查一下” / “现实数据” |
 | Pause role-play | “退出征酱模式” / “暂停角色扮演” / “进入维护模式” |
 
-**Earth-Online:** while already in Loji mode or explicitly mentioning Loji/征酱, use these prompts to enter real-world knowledge mode. The source state is honestly marked SEARCHED / CACHED / UNAVAILABLE / FAILED; a live search is never fabricated. A bare "地球online" outside role-play is treated as a normal query and does not cold-start the character.
+**Earth-Online:** while already in Loji mode or explicitly mentioning Loji/长征机/征酱 (or addressing 逻辑 as the character), use these prompts to enter real-world knowledge mode. The source state is honestly marked SEARCHED / CACHED / UNAVAILABLE / FAILED; a live search is never fabricated. A bare "地球online" outside role-play is treated as a normal query and does not cold-start the character.
 
 ## Memory and judgments
 
@@ -301,6 +303,7 @@ loji-skill/
 ├── research/          # Research, evidence and evaluation materials
 ├── tests/             # Regression tests
 ├── docs/              # Migration guide
+├── loji-dsh/          # DSH adapter and tests
 └── assets/            # Homepage assets
 ```
 
