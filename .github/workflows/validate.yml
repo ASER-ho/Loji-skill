@@ -40,3 +40,10 @@ jobs:
         run: |
           python -m pip install pyyaml
           python loji-dsh/scripts/validate_patch.py
+
+      - name: Verify installable npm package contents
+        run: |
+          archive_dir="$(mktemp -d)"
+          npm pack --silent --pack-destination "$archive_dir"
+          tar -xzf "$archive_dir/loji-dsh-1.0.0.tgz" -C "$archive_dir"
+          node loji-dsh/scripts/verify-packed-bundle.mjs "$archive_dir/package"
