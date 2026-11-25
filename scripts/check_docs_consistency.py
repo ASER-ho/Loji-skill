@@ -220,6 +220,14 @@ def run(root: Path = ROOT) -> Report:
 
 
 def main(argv: list[str] | None = None) -> int:
+    # Windows CI runs Python with a legacy ANSI code page, and this script
+    # quotes document excerpts that may be Chinese. Without an explicit UTF-8
+    # stream every report line can raise UnicodeEncodeError and turn a green
+    # check into a traceback.
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is not None:
+            reconfigure(encoding="utf-8", errors="replace")
     root = ROOT
     if argv:
         root = Path(argv[0]).resolve()
