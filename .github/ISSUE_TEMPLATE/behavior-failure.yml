@@ -1,0 +1,129 @@
+name: 行为缺陷报告
+description: 角色表现不符合 SKILL.md 的规则：形态错乱、人格漂移、伪造记忆、口号化等
+title: "[行为] "
+labels: ["behavior", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        这个模板对应 `research/PERSONA_FAILURE_MODES.md` 的十类故障。
+        **请先把真实记忆内容脱敏**：不要粘贴 `memory.md`、`JUDGMENTS.md`、`memory.state.json` 的原文或绝对路径。
+        涉及凭据泄漏、路径穿越、文件损坏的问题请走 [SECURITY.md](https://github.com/ASER-ho/Loji-skill/blob/master/SECURITY.md) 的私密渠道，不要开公开 issue。
+
+  - type: dropdown
+    id: failure-mode
+    attributes:
+      label: 故障类别
+      description: 选最接近的一类；拿不准就选「不确定」，评审会归类。
+      options:
+        - 故障 1：泛二次元化（萌妹腔、颜文字过载、二次元套话）
+        - 故障 2：注释滥用（// 注释变成套路装饰）
+        - 故障 3：设定倾倒（不问就抛设定、LORE 压过回答）
+        - 故障 4：伪共同记忆（编造没发生过的共同经历）
+        - 故障 5：模式表演化（固定的「先是机器后是人」套路）
+        - 故障 6：毛装自动化（套话式群众路线、口号化分析）
+        - 故障 7：军服绝对化（不容置疑、威胁式语气、拒绝讨论）
+        - 故障 8：TFR 梗压过用户任务（玩梗优先于完成任务）
+        - 故障 9：口号化（核心锚点变成重复标语）
+        - 故障 10：女娲模板化（回答退化成通用 AI 模板）
+        - 其他 / 不确定
+    validations:
+      required: true
+
+  - type: input
+    id: host
+    attributes:
+      label: 宿主与模型
+      description: 客户端 + 模型 + 版本，例如「Codex 项目级 / GPT-5.1」「DSH Desktop 1.2.3 / DeepSeek-V3.2」「Claude Code / Opus 4.5」。
+      placeholder: 客户端 / 模型 / 版本
+    validations:
+      required: true
+
+  - type: input
+    id: skill-version
+    attributes:
+      label: SKILL.md 版本与提交
+      description: 取自 `SKILL.md` frontmatter 的 `metadata.version` 和实际加载的提交哈希（`git rev-parse HEAD`）。
+      placeholder: 1.1.4 @ 0a1b2c3
+    validations:
+      required: true
+
+  - type: dropdown
+    id: install
+    attributes:
+      label: 安装方式
+      options:
+        - DSH 插件（loji-dsh npm 包）
+        - 手动放入 skills 目录
+        - Codex 项目级 AGENTS.md 接入
+        - Claude Code 自定义 skill
+        - 其它
+    validations:
+      required: true
+
+  - type: dropdown
+    id: trigger
+    attributes:
+      label: 是否本该触发
+      description: 这决定了问题出在 description 触发词还是人格规则本身。
+      options:
+        - 应该触发，也触发了（人格/规则问题）
+        - 应该触发，但没有触发（触发词问题）
+        - 不该触发，却触发了（误触发）
+        - 角色模式中途丢失
+    validations:
+      required: true
+
+  - type: textarea
+    id: conversation
+    attributes:
+      label: 对话片段（已脱敏）
+      description: 贴关键轮次即可，保留触发消息和出错回复。删掉真实姓名、路径、项目名、记忆内容。
+      render: text
+      placeholder: |
+        用户：……
+        模型：……
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期望 vs 实际
+      description: 期望行为要指向 `SKILL.md` 的具体章节或 `references/` 的文件名，方便定位规则。
+      placeholder: |
+        期望：按「人格执行优先级」第 1 条保留活人感，不应出现设定倾倒。
+        实际：连续三段解释 TFR 世界观，没有回答问题。
+    validations:
+      required: true
+
+  - type: dropdown
+    id: frequency
+    attributes:
+      label: 复现频率
+      options:
+        - 每次都出现
+        - 经常（超过一半）
+        - 偶发（少数轮次）
+        - 只出现过一次
+    validations:
+      required: true
+
+  - type: input
+    id: memory-state
+    attributes:
+      label: 记忆挡位
+      description: auto + granted / explicit / read_only / off / 未配置。授权状态会影响可用信息量。
+      placeholder: auto + granted
+
+  - type: checkboxes
+    id: confirm
+    attributes:
+      label: 确认
+      options:
+        - label: 我已脱敏，未包含真实记忆、判断账本内容、个人路径或凭据
+          required: true
+        - label: 这是行为问题，不是安全漏洞（安全类问题将走私密渠道）
+          required: true
+        - label: 我使用的是 `master` 上的版本，而非历史 tag
+          required: true

@@ -5,7 +5,7 @@
  * it is NOT a substitute for the DSH Desktop/Cordis runtime integration test.
  */
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { readFile, readdir, stat } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { resolve, join } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -31,6 +31,47 @@ const required = [
 for (const path of required) {
   assert.ok(existsSync(join(root, path)), "Missing file from packed archive: " + path);
 }
+
+/*
+ * Install-size contract. The archive ships the skill, its references, the
+ * research notes the skill points at, and the DSH adapter; the banner asset,
+ * the test suite and the repository docs stay behind. `research/` has to stay
+ * in the archive because manifest.test.mjs asserts it is listed in `files`.
+ * Without this assertion the package silently creeps back to multi-megabyte
+ * installs, because everything listed in `files` is shipped to every user on
+ * every install and update.
+ */
+const MAX_PACKED_BYTES = 2 * 1024 * 1024;
+const FORBIDDEN_DIRS = ["assets", "tests", "docs"];
+for (const dir of FORBIDDEN_DIRS) {
+  assert.ok(
+    !existsSync(join(root, dir)),
+    "Packed archive must not ship " + dir + "/; keep it repository-only",
+  );
+}
+
+async function directoryBytes(dir) {
+  let total = 0;
+  for (const entry of await readdir(dir, { withFileTypes: true })) {
+    const path = join(dir, entry.name);
+    if (entry.isDirectory()) {
+      total += await directoryBytes(path);
+    } else if (entry.isFile()) {
+      total += (await stat(path)).size;
+    }
+  }
+  return total;
+}
+
+const packedBytes = await directoryBytes(root);
+assert.ok(
+  packedBytes <= MAX_PACKED_BYTES,
+  "Packed archive is " +
+    (packedBytes / 1024 / 1024).toFixed(2) +
+    " MB, over the " +
+    MAX_PACKED_BYTES / 1024 / 1024 +
+    " MB install-size budget",
+);
 const plugin = await import(pathToFileURL(join(root, manifest.main)).href);
 assert.equal(plugin.name, "loji-skill");
 assert.deepEqual(plugin.inject, ["skills"]);
@@ -54,4 +95,8 @@ const patch = await readFile(join(root, "loji-dsh/cordis.patch.yml"), "utf8");
 assert.match(patch, /id: loji-skill\n      name: loji-dsh/);
 assert.match(patch, /id: preset-loji\n      name: '@deepseek-ai\/dsh-agent-preset'/);
 assert.match(patch, /id: loji\n        name: 长征机\/逻辑/);
-console.log("Packed loji-dsh bundle: manifest, resources, provider, and preset declaration OK");
+console.log(
+  "Packed loji-dsh bundle: manifest, resources, provider, preset declaration and " +
+    (packedBytes / 1024).toFixed(0) +
+    " KB install size OK",
+);

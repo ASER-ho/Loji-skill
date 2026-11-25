@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased — DSH Agent Preset 与工程加固
+
+- `feat(loji-dsh): add 长征机/逻辑 agent preset (#2)`：新增 preset `loji`（显示名「长征机/逻辑」）与 `loji-dsh/presets/upstream/standard-0.2.2-rc.1.patch.yml`；`cordis.patch.yml` 同时声明宿主 `loji-skill` provider 与 `preset-loji`，由 `loji-dsh/scripts/gen-preset-patch.mjs` 从固定上游快照确定性重建。技能内容与版本号不变。
+- 包体积契约：`package.json` 的 `files` 不再包含 `assets/`、`tests/`、`research/`、`docs/`，安装体积由约 6.1 MB 降至约 0.7 MB；`verify-packed-bundle.mjs` 增加 2 MB 上限断言与禁止目录断言，防止体积回涨。
+- CI 加固：新增 `scripts/check_docs_consistency.py`，交叉校验 `SKILL.md`、`loji-dsh/lib/skill-meta.json`、`loji-dsh/README.md`、`ROADMAP.md`、`CHANGELOG.md`、`package.json` 的版本一致性；npm 归档名改为运行时解析，不再硬编码 `loji-dsh-1.0.0.tgz`；新增 Windows 与 Python 3.11 矩阵、`permissions: contents: read`、`concurrency`、`timeout-minutes`。
+- `skills-ref` 校验进入 CI：可安装时执行 `skills-ref validate .`，不可安装时显式记录 `ENV-BLOCKED`，本地的 `validate_repo.py` 结果不计作 `skills-ref` PASS。
+- 仓库治理：新增 `SECURITY.md`、`CONTRIBUTING.md`、结构化缺陷模板（按 `research/PERSONA_FAILURE_MODES.md` 的十类故障分诊）与 `scripts/upgrade.py`（备份记忆与判断账本后升级，失败可回滚）。
+- 未完成项：真实 Windows / DSH Desktop 的安装与对话验收尚未执行，不宣称该项通过。
+
 ## v1.1.4（正式版本）— Memory & Reasoning Enhancements
 
 - L114-01：新增统一行为评测协议、人格保真度 14 场景、合成记忆检索 12 用例、判断证据 8 场景与轻量评测入口；确定性检查与真实模型行为检查分离，答题与评分分离，授权/隐私/锚点破坏/伪造证据为零容忍失败项。

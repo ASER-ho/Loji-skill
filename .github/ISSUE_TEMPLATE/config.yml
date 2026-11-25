@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 安全漏洞（私密报告）
+    url: https://github.com/ASER-ho/Loji-skill/security/advisories/new
+    about: 凭据泄漏、路径穿越、记忆文件损坏等问题请走私密渠道，不要在公开 issue 里贴载荷。
+  - name: 先读贡献指南
+    url: https://github.com/ASER-ho/Loji-skill/blob/master/CONTRIBUTING.md
+    about: 环境要求、必须通过的检查、改动要配什么测试，都写在 CONTRIBUTING.md 里。
+  - name: 当前版本与验收范围
+    url: https://github.com/ASER-ho/Loji-skill/blob/master/ROADMAP.md
+    about: 哪些验证已经做过、哪些还没做，以 ROADMAP 为准；不要根据 README 摘要推断验收范围。

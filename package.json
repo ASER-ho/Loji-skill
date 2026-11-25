@@ -17,18 +17,14 @@
     "references",
     "research",
     "examples",
-    "docs",
     "scripts",
-    "tests",
-    "assets",
+    "memory.template.md",
+    "judgments.template.md",
     "README.md",
     "README_EN.md",
     "CHANGELOG.md",
-    "ROADMAP.md",
     "LICENSE",
-    "ATTRIBUTION.md",
-    "judgments.template.md",
-    "memory.template.md"
+    "ATTRIBUTION.md"
   ],
   "keywords": [
     "dsh",
