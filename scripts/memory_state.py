@@ -108,27 +108,35 @@ class MemoryState:
         self._current = None
 
     def _paths(self):
-        # No discovery, mkdir, redirect, or reading body/frontmatter.
-        for path in (self.folder, *self.folder.parents, self.path,
-                     Path(str(self.path) + ".lock"),
-                     Path(str(self.path) + ".transaction.lock")):
-            if path.is_symlink() or (hasattr(path, "is_junction") and path.is_junction()):
-                raise StateError("linked state paths are not supported")
-        if not self.folder.is_dir():
-            raise StateError("configured memory directory is unavailable")
+        # Never discover another root or infer permission from body metadata.
+        for path in (self.path, io.lock_path_for(self.path),
+                     io.lock_path_for(self._transaction_path())):
+            try:
+                if path.is_symlink():
+                    raise io.guard.PathBoundaryError("linked state path")
+                io.guard.managed_path(path, root=self.folder)
+            except (OSError, io.guard.PathBoundaryError) as exc:
+                raise StateError("configured state path is unavailable or linked") from exc
+
+    def _transaction_path(self):
+        return self.folder / (STATE_NAME + ".transaction")
 
     @contextmanager
-    def _transaction(self, *, write=False):
+    def _transaction(self, *, write=False, read_only=False):
         if not (self.host.state_write if write else self.host.state_read):
             raise AccessError("host denies state file access")
         self._paths()
-        with io.exclusive_lock(Path(str(self.path) + ".transaction"), timeout=self.timeout):
+        target = self._transaction_path()
+        with io.exclusive_lock(target, timeout=self.timeout, read_only=read_only,
+                               track_owner=write):
             self._paths()
             yield
 
     def _saved(self):
         # Bound read before JSON parsing; do not allocate arbitrary file sizes.
-        with self.path.open("rb") as handle:
+        path = io.guard.managed_path(self.path, root=self.folder)
+        with path.open("rb") as handle:
+            io.guard.checked_fd(path, handle.fileno())
             return parse(handle.read(MAX_STATE_BYTES + 1))
 
     def configure(self, policy: str, *, user_confirmed: bool = False):
@@ -168,7 +176,7 @@ class MemoryState:
             state = self._saved()
         except FileNotFoundError:
             return Authorization("off", "pending", False, False, "state missing", True)
-        except (StateError, OSError, io.MemoryIOError):
+        except (StateError, OSError, io.MemoryIOError, io.guard.PathBoundaryError):
             return Authorization("off", "pending", False, False, "state invalid or inaccessible", True)
         if not self.host.accept_saved:
             return Authorization("off", "pending", False, False, "host has not accepted saved state", True)
@@ -193,10 +201,12 @@ class MemoryState:
                              "saved choice intersected with host limits", False)
 
     @contextmanager
-    def access(self, *, write=False, user_requested=False):
+    def access(self, *, write=False, user_requested=False, readonly_lock=False):
         # Hold through the entire body operation. Cooperating sessions cannot
         # change state between authorization and body publication.
-        with self._transaction():
+        if write and readonly_lock:
+            raise AccessError("read-only state transaction cannot authorize writes")
+        with self._transaction(read_only=readonly_lock, write=False):
             auth = self._authorization(requested=user_requested)
             if not (auth.can_write if write else auth.can_read):
                 raise AccessError(auth.reason)
@@ -212,7 +222,7 @@ class MemoryState:
                 except (FileNotFoundError, StateError, OSError):
                     result["saved"] = None
                 return result
-        except (StateError, OSError, io.MemoryIOError):
+        except (StateError, OSError, io.MemoryIOError, io.guard.PathBoundaryError):
             return dict(vars(Authorization("off", "pending", False, False,
                                            "host/state unavailable", True)), saved=None)
 
@@ -235,10 +245,24 @@ class MemoryState:
                              action, data, **auth.body_args(), user_requested=user_requested,
                              eligible_and_private=eligible_and_private, **options)
 
+    def migrate(self, *, dry_run=False, user_requested=False, target=None):
+        if __package__:
+            from . import migrate_memory
+        else:
+            import migrate_memory
+        with self.access(write=not dry_run, user_requested=user_requested,
+                         readonly_lock=dry_run) as auth:
+            if target is not None:
+                target = io.guard.managed_path(target, root=self.folder)
+            return migrate_memory.migrate(
+                self.folder / "memory.md", **auth.body_args(), dry_run=dry_run,
+                migration_authorized=user_requested, in_place=target is None, target=target,
+            )
+
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("action", choices=("status", "set", "reset", "context", "read-memory", "judgments", "mutate"))
+    parser.add_argument("action", choices=("status", "set", "reset", "context", "read-memory", "judgments", "mutate", "migrate"))
     parser.add_argument("--memory-dir", required=True, help="absolute directory from trusted host configuration")
     for flag in ("accept-saved", "state-read", "state-write", "body-read", "body-write",
                  "user-confirmed", "user-requested", "eligible-and-private"):
@@ -251,9 +275,15 @@ def main(argv=None):
     parser.add_argument("--domain")
     parser.add_argument("--matters", help="unchanged exact matter selector, JSON array")
     parser.add_argument("--as-of")
+    parser.add_argument("--dry-run", action="store_true", help="preview a schema migration")
+    parser.add_argument("--migration-target", help="new absolute output path inside the approved directory")
     args = parser.parse_args(argv)
     if args.action != "context" and args.matters is not None:
         parser.error("--matters is only supported for context")
+    if args.action != "migrate" and (args.dry_run or args.migration_target is not None):
+        parser.error("migration options are only supported for migrate")
+    if args.migration_target is not None and not Path(args.migration_target).is_absolute():
+        parser.error("--migration-target must be absolute")
     try:
         host = Host(**{key: getattr(args, key) for key in Host.__dataclass_fields__})
         state = MemoryState(args.memory_dir, host)
@@ -274,6 +304,10 @@ def main(argv=None):
             result = {"text": state.read_memory().text}
         elif args.action == "judgments":
             result = {"judgments": [vars(j) for j in state.load_judgments()[0].judgments]}
+        elif args.action == "migrate":
+            migrated = state.migrate(dry_run=args.dry_run, user_requested=args.user_requested,
+                                     target=args.migration_target)
+            result = vars(migrated)
         else:
             result = state.mutate(args.operation, schema.decode_json(args.data if args.data is not None else "null"),
                                   user_requested=args.user_requested,
@@ -281,7 +315,10 @@ def main(argv=None):
         print(json.dumps(result, ensure_ascii=True, default=str))
         return 0
     except (StateError, OSError, io.MemoryIOError, jl.JudgmentLedgerError, ValueError) as exc:
-        print(json.dumps({"error": type(exc).__name__, "message": str(exc)}, ensure_ascii=True), file=sys.stderr)
+        result = {"error": type(exc).__name__, "message": str(exc)}
+        if isinstance(exc, io.MemoryConflictError):
+            result["status"] = "conflict"
+        print(json.dumps(result, ensure_ascii=True), file=sys.stderr)
         return 2
 
 

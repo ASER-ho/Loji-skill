@@ -20,6 +20,7 @@ Limitations (reported explicitly, not hidden):
 from __future__ import annotations
 
 import hashlib
+import json
 import os
 import secrets
 import tempfile
@@ -28,6 +29,11 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Iterator
+
+if __package__:
+    from . import safe_state_write as guard
+else:
+    import safe_state_write as guard
 
 try:  # POSIX
     import fcntl
@@ -87,6 +93,7 @@ class MemoryPostWriteVerificationError(MemoryIOError):
         recovery_required: bool,
         published_version: "MemoryVersion | None" = None,
         published_identity: tuple[int, int] | None = None,
+        restore_point: "RestorePoint | None" = None,
     ) -> None:
         super().__init__(message)
         self.backup_path = backup_path
@@ -95,6 +102,7 @@ class MemoryPostWriteVerificationError(MemoryIOError):
         self.recovery_required = recovery_required
         self.published_version = published_version
         self.published_identity = published_identity
+        self.restore_point = restore_point
 
 
 class MemoryAlreadyExistsError(MemoryIOError):
@@ -106,6 +114,16 @@ class MemoryVersion:
     sha256: str
     mtime_ns: int | None
     size: int
+    file_id: tuple[int, int] | None = None
+    change_ns: int | None = None
+
+
+@dataclass(frozen=True)
+class RestorePoint:
+    target: Path
+    backup: Path
+    backup_digest: str
+    published: MemoryVersion
 
 
 @dataclass(frozen=True)
@@ -129,6 +147,26 @@ def version_from_bytes(data: bytes, *, mtime_ns: int | None) -> MemoryVersion:
     return MemoryVersion(sha256=sha256_bytes(data), mtime_ns=mtime_ns, size=len(data))
 
 
+def _version_for_stat(data: bytes, info) -> MemoryVersion:
+    token = version_from_bytes(data, mtime_ns=info.st_mtime_ns)
+    return MemoryVersion(token.sha256, token.mtime_ns, token.size,
+                         guard.identity(info), info.st_ctime_ns)
+
+
+def _stat_token(info):
+    return guard.identity(info), info.st_mtime_ns, info.st_ctime_ns, info.st_size
+
+
+def _live_stat(path: Path):
+    checked = guard.managed_path(path)
+    fd = os.open(checked, os.O_RDONLY | O_BINARY | getattr(os, "O_NOFOLLOW", 0))
+    try:
+        guard.checked_fd(checked, fd)
+        return os.fstat(fd)
+    finally:
+        os.close(fd)
+
+
 def read_bytes(path: Path | str) -> bytes:
     return Path(path).read_bytes()
 
@@ -141,19 +179,17 @@ def read_text(path: Path | str) -> str:
 def _read_stable(path: Path) -> tuple[bytes, MemoryVersion]:
     """Read bytes and a token, retrying if the file changes mid-read."""
     for _ in range(3):
-        before = path.stat()
-        data = path.read_bytes()
-        after = path.stat()
-        if (
-            getattr(before, "st_mtime_ns", None),
-            before.st_size,
-        ) == (
-            getattr(after, "st_mtime_ns", None),
-            after.st_size,
-        ):
-            return data, version_from_bytes(
-                data, mtime_ns=getattr(after, "st_mtime_ns", None)
-            )
+        checked = guard.managed_path(path)
+        fd = os.open(checked, os.O_RDONLY | O_BINARY | getattr(os, "O_NOFOLLOW", 0))
+        with os.fdopen(fd, "rb") as handle:
+            guard.checked_fd(checked, fd)
+            before = os.fstat(fd)
+            data = handle.read()
+            after = os.fstat(fd)
+        # Windows lstat reports creation time where fstat reports change
+        # time after rename. Compare the same stat source for generations.
+        if _stat_token(before) == _stat_token(after) == _stat_token(_live_stat(checked)):
+            return data, _version_for_stat(data, after)
     raise MemoryConflictError(f"file changed while reading: {path}")
 
 
@@ -215,51 +251,98 @@ def _unlock(fd: int, backend: str) -> None:
         msvcrt.locking(fd, msvcrt.LK_UNLCK, 1)
 
 
-@contextmanager
-def exclusive_lock(path: Path | str, timeout: float = DEFAULT_TIMEOUT) -> Iterator[None]:
-    """Acquire an advisory exclusive lock next to ``path``.
+def inspect_lock_owner(fd: int) -> dict | None:
+    os.lseek(fd, 1, os.SEEK_SET)
+    raw = os.read(fd, 513)
+    if not raw:
+        return None
+    try:
+        owner = json.loads(raw)
+        pid, started = owner["pid"], owner["started_ns"]
+        nonce = owner["nonce"]
+        if (type(pid) is not int or type(started) is not int or
+                not isinstance(nonce, str) or len(nonce) != 16):
+            raise ValueError
+    except (KeyError, TypeError, ValueError):
+        return {"status": "unknown"}
+    return {"pid": pid, "started_ns": started,
+            "status": "stale" if guard.stale_owner(pid, started) else "retained"}
 
-    The lock file is separate from the memory file so that ``os.replace`` on
-    the memory file cannot invalidate the lock.
-    """
+
+def clear_lock_owner(fd: int) -> None:
+    os.ftruncate(fd, 1)
+    os.fsync(fd)
+
+
+@contextmanager
+def exclusive_lock(
+    path: Path | str,
+    timeout: float = DEFAULT_TIMEOUT,
+    *,
+    read_only: bool = False,
+    track_owner: bool = False,
+    diagnose_link: bool = False,
+) -> Iterator[int]:
+    """Use a stable lock inode. The OS releases the held range on process exit."""
+    if read_only and track_owner:
+        raise ValueError("a read-only lock cannot record an owner")
     backend = _lock_backend()
     if backend is None:
         raise MemoryLockUnavailableError("no advisory lock backend available")
 
-    lock_file = lock_path_for(path)
-    fd = os.open(lock_file, os.O_CREAT | os.O_RDWR | O_BINARY, 0o600)
+    target = guard.managed_path(path, allow_hardlinks=diagnose_link)
+    lock_file = guard.managed_path(lock_path_for(target), root=target.parent)
+    flags = os.O_RDONLY if read_only else os.O_CREAT | os.O_RDWR
+    try:
+        fd = os.open(lock_file, flags | O_BINARY | getattr(os, "O_NOFOLLOW", 0), 0o600)
+    except FileNotFoundError as exc:
+        if read_only:
+            raise MemoryLockUnavailableError("state lock has not been initialized") from exc
+        raise
     acquired = False
+    recorded = False
     try:
         deadline = time.monotonic() + timeout
         while True:
+            guard.checked_fd(lock_file, fd)
             if _try_lock(fd, backend):
                 acquired = True
                 break
             if time.monotonic() >= deadline:
-                raise MemoryLockTimeoutError(
-                    f"timed out after {timeout:.1f}s waiting for {lock_file}"
-                )
+                raise MemoryLockTimeoutError("timed out waiting for the state lock")
             time.sleep(POLL_INTERVAL)
 
-        # Initialize the lock file's first byte only after the exclusive lock
-        # is held. Writing before lock acquisition is a shared-write race
-        # (both processes can observe size 0 and write the same region).
-        if os.fstat(fd).st_size == 0:
+        guard.checked_fd(lock_file, fd)
+        if not read_only and os.fstat(fd).st_size == 0:
             os.lseek(fd, 0, os.SEEK_SET)
             os.write(fd, b"\0")
             os.fsync(fd)
-
-        yield
+        if track_owner:
+            owner = inspect_lock_owner(fd)
+            if owner and owner["status"] != "stale":
+                raise MemoryLockUnavailableError("prior lock owner is not confirmed stale")
+            if owner:
+                clear_lock_owner(fd)
+            os.lseek(fd, 1, os.SEEK_SET)
+            recorded = True
+            marker = json.dumps({"pid": os.getpid(), "started_ns": time.time_ns(),
+                                 "nonce": secrets.token_hex(8)}).encode("ascii")
+            if os.write(fd, marker) != len(marker):
+                raise MemoryLockUnavailableError("cannot record lock owner")
+            os.fsync(fd)
+        yield fd
     finally:
         if acquired:
             try:
-                _unlock(fd, backend)
-            except OSError:
-                pass
-        try:
+                if recorded:
+                    clear_lock_owner(fd)
+            finally:
+                try:
+                    _unlock(fd, backend)
+                finally:
+                    os.close(fd)
+        else:
             os.close(fd)
-        except OSError:
-            pass
 
 
 def _check_expected(current: MemoryVersion, expected: MemoryVersion) -> None:
@@ -273,6 +356,10 @@ def _check_expected(current: MemoryVersion, expected: MemoryVersion) -> None:
             "metadata conflict (mtime_ns): "
             f"expected {expected.mtime_ns}, current {current.mtime_ns}"
         )
+    if expected.file_id is not None and current.file_id != expected.file_id:
+        raise MemoryConflictError("file identity changed")
+    if expected.change_ns is not None and current.change_ns != expected.change_ns:
+        raise MemoryConflictError("file generation changed")
     if current.size != expected.size:
         raise MemoryConflictError(
             f"metadata conflict (size): expected {expected.size}, current {current.size}"
@@ -293,8 +380,8 @@ def _safe_unlink(path: Path | None) -> None:
     if path is None:
         return
     try:
-        path.unlink()
-    except OSError:
+        guard.managed_path(path).unlink()
+    except (OSError, guard.PathBoundaryError):
         pass
 
 
@@ -338,7 +425,7 @@ def _unique_backup_path(path: Path) -> Path:
 
 def backup(path: Path | str, expected: MemoryVersion | None = None) -> Path:
     """Create and verify a non-overwriting backup of ``path``."""
-    path = Path(path)
+    path = guard.managed_path(path)
     try:
         data, current = _read_stable(path)
     except OSError as exc:
@@ -364,7 +451,7 @@ def backup(path: Path | str, expected: MemoryVersion | None = None) -> Path:
             os.close(fd)
 
     try:
-        backup_data = backup_path.read_bytes()
+        backup_data, _ = _read_stable(backup_path)
     except OSError as exc:
         raise MemoryBackupError(f"cannot read back backup {backup_path}: {exc}") from exc
 
@@ -376,7 +463,8 @@ def backup(path: Path | str, expected: MemoryVersion | None = None) -> Path:
 
 def _write_temp(path: Path, data: bytes) -> Path:
     fd, temp_name = tempfile.mkstemp(
-        prefix=f"{path.name}.", suffix=".tmp", dir=str(path.parent)
+        prefix=f"{path.name}.loji-{os.getpid()}-{time.time_ns()}-{secrets.token_hex(8)}.",
+        suffix=".tmp", dir=str(path.parent),
     )
     temp_path = Path(temp_name)
 
@@ -417,7 +505,7 @@ def _write_temp(path: Path, data: bytes) -> Path:
             raise MemoryWriteError(detail) from exc
 
     try:
-        written = temp_path.read_bytes()
+        written, _ = _read_stable(temp_path)
     except OSError as exc:
         cleanup_error = _cleanup_temp(temp_path)
         detail = f"cannot read back temporary file: {exc}"
@@ -441,6 +529,7 @@ def atomic_write(
     expected: MemoryVersion,
     *,
     timeout: float = DEFAULT_TIMEOUT,
+    allow_lossless_recovery: bool = False,
 ) -> AtomicWriteResult:
     """Atomically write ``data`` if the on-disk version matches ``expected``.
 
@@ -449,11 +538,11 @@ def atomic_write(
     if expected is None:
         raise MemoryVersionRequiredError("expected MemoryVersion is required for updates")
 
-    path = Path(path)
+    path = guard.managed_path(path)
     payload = data.encode("utf-8") if isinstance(data, str) else bytes(data)
     intended_sha256 = sha256_bytes(payload)
 
-    with exclusive_lock(path, timeout=timeout):
+    with exclusive_lock(path, timeout=timeout, track_owner=True):
         try:
             current = read_version(path)
         except FileNotFoundError as exc:
@@ -473,8 +562,10 @@ def atomic_write(
             published_version = version_from_bytes(payload, mtime_ns=published_stat.st_mtime_ns)
             published_identity = (published_stat.st_dev, published_stat.st_ino)
             _check_expected(read_version(path), current)
+            guard.managed_path(path)
+            guard.managed_path(temp_path, root=path.parent)
             os.replace(temp_path, path)
-        except (MemoryConflictError, FileNotFoundError):
+        except (MemoryConflictError, FileNotFoundError, guard.PathBoundaryError):
             _safe_unlink(temp_path)
             raise
         except OSError as exc:
@@ -491,6 +582,16 @@ def atomic_write(
             ) from exc
 
         _fsync_parent_dir(path)
+        restore_point = None
+        if allow_lossless_recovery:
+            try:
+                info = _live_stat(path)
+                if (guard.identity(info) == published_identity and
+                        info.st_mtime_ns == published_version.mtime_ns):
+                    restore_point = RestorePoint(path, backup_path, current.sha256,
+                                                 _version_for_stat(payload, info))
+            except (OSError, guard.PathBoundaryError):
+                pass
 
         try:
             post = read_version(path)
@@ -503,6 +604,7 @@ def atomic_write(
                 recovery_required=True,
                 published_version=published_version,
                 published_identity=published_identity,
+                restore_point=restore_point,
             ) from exc
 
         if post.sha256 != intended_sha256 or post.size != len(payload):
@@ -525,94 +627,43 @@ def atomic_write(
                 recovery_required=True,
                 published_version=published_version,
                 published_identity=published_identity,
+                restore_point=restore_point,
             )
 
         return AtomicWriteResult(backup_path=backup_path, version=post)
 
 
-def restore_backup(
-    backup_path: Path | str,
-    target_path: Path | str,
-    *,
-    expected_target_sha256: str,
-    expected_backup_sha256: str,
-    expected_target_version: MemoryVersion | None = None,
-    expected_target_identity: tuple[int, int] | None = None,
-    timeout: float = DEFAULT_TIMEOUT,
-) -> MemoryVersion:
-    """Restore a verified backup only if the target still has the expected hash.
-
-    This is deliberately guarded: the caller must state which target content
-    they are willing to replace. It is never called automatically by
-    :func:`atomic_write`.
-    """
-    backup_path = Path(backup_path)
-    target_path = Path(target_path)
-
-    if not expected_backup_sha256:
-        raise MemoryVersionRequiredError(
-            "expected_backup_sha256 is required for restore"
-        )
-
-    def check_identity() -> None:
-        if expected_target_identity is not None:
-            stat = target_path.stat()
-            if (stat.st_dev, stat.st_ino) != expected_target_identity:
-                raise MemoryConflictError("refusing restore: target identity changed")
-
-    with exclusive_lock(target_path, timeout=timeout):
+def restore_backup(point: RestorePoint, *, timeout: float = DEFAULT_TIMEOUT) -> MemoryVersion:
+    """Recover only the same interrupted lossless transaction, with its receipt."""
+    if not isinstance(point, RestorePoint) or not point.published.file_id:
+        raise MemoryVersionRequiredError("original recovery receipt required")
+    target = guard.managed_path(point.target)
+    backup_path = guard.managed_path(point.backup, root=target.parent)
+    if not backup_path.name.startswith(target.name + ".bak."):
+        raise guard.PathBoundaryError("recovery backup must belong to the target")
+    with exclusive_lock(target, timeout=timeout, track_owner=True):
         try:
-            check_identity()
-            current = read_version(target_path)
+            current = read_version(target)
         except FileNotFoundError as exc:
-            raise MemoryConflictError("target disappeared before restore") from exc
+            raise MemoryConflictError("target disappeared before recovery") from exc
+        _check_expected(current, point.published)
+        backup_data, backup_version = _read_stable(backup_path)
+        if backup_version.sha256 != point.backup_digest:
+            raise MemoryConflictError("recovery backup checksum mismatch")
 
-        if expected_target_version is not None:
-            _check_expected(current, expected_target_version)
-        if current.sha256 != expected_target_sha256:
-            raise MemoryConflictError(
-                "refusing restore: target changed "
-                f"(expected {expected_target_sha256}, current {current.sha256})"
-            )
-
+        temp_path = _write_temp(target, backup_data)
         try:
-            backup_data = backup_path.read_bytes()
-        except OSError as exc:
-            raise MemoryBackupError(f"cannot read backup: {exc}") from exc
-
-        backup_sha256 = sha256_bytes(backup_data)
-        if backup_sha256 != expected_backup_sha256:
-            raise MemoryConflictError("refusing restore: backup checksum mismatch")
-
-        temp_path = _write_temp(target_path, backup_data)
-        try:
-            check_identity()
-            _check_expected(read_version(target_path), current)
-            os.replace(temp_path, target_path)
-        except (MemoryConflictError, FileNotFoundError):
+            _check_expected(read_version(target), current)
+            guard.managed_path(temp_path, root=target.parent)
+            os.replace(temp_path, target)
+        finally:
             _safe_unlink(temp_path)
-            raise
-        except OSError as exc:
-            _safe_unlink(temp_path)
-            raise MemoryWriteError(f"restore replace failed: {exc}") from exc
-
-        _fsync_parent_dir(target_path)
-        try:
-            post = read_version(target_path)
-        except (OSError, MemoryConflictError) as exc:
+        _fsync_parent_dir(target)
+        post = read_version(target)
+        if post.sha256 != point.backup_digest:
             raise MemoryPostWriteVerificationError(
-                f"cannot verify restored target: {exc}",
-                backup_path=backup_path,
-                intended_sha256=backup_sha256,
-                target_version=None,
-                recovery_required=True,
-            ) from exc
-        if post.sha256 != backup_sha256:
-            raise MemoryPostWriteVerificationError(
-                "restore verification failed",
-                backup_path=backup_path,
-                intended_sha256=backup_sha256,
-                target_version=post,
+                "recovery verification failed", backup_path=backup_path,
+                intended_sha256=point.backup_digest, target_version=post,
                 recovery_required=True,
             )
         return post
@@ -653,8 +704,8 @@ def publish_new(
     timeout: float = DEFAULT_TIMEOUT,
 ) -> MemoryVersion:
     """Publish verified bytes without replacing any existing target."""
-    target_path = Path(target_path)
-    with exclusive_lock(target_path, timeout=timeout):
+    target_path = guard.managed_path(target_path)
+    with exclusive_lock(target_path, timeout=timeout, track_owner=True):
         if target_path.exists() or target_path.is_symlink():
             raise MemoryAlreadyExistsError(f"target already exists: {target_path}")
 
@@ -663,7 +714,10 @@ def publish_new(
             if before_publish is not None:
                 before_publish()
             try:
+                guard.managed_path(target_path)
+                guard.managed_path(temp_path, root=target_path.parent)
                 _exclusive_publish(temp_path, target_path)
+                _fsync_parent_dir(target_path)
             except FileExistsError as exc:
                 _safe_unlink(temp_path)
                 raise MemoryAlreadyExistsError(

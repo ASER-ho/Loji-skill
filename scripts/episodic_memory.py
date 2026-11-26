@@ -12,12 +12,12 @@ from uuid import uuid4
 
 if __package__:
     from . import judgment_ledger, memory_io, memory_schema as schema
-    from .migrate_memory import AccessError, authorize, update
+    from .migrate_memory import AccessError, authorize
 else:
     import judgment_ledger
     import memory_io
     import memory_schema as schema
-    from migrate_memory import AccessError, authorize, update
+    from migrate_memory import AccessError, authorize
 
 
 def _load(memory, policy, consent, *, write=False, requested=False):
@@ -56,13 +56,18 @@ def context(memory, ledger=None, *, policy, consent, domain=None, as_of=None, ma
         _key(domain, "domain")
     doc, _ = _load(memory, policy, consent)
     judgments, _ = _ledger(doc.episodes, ledger, policy, consent)
+    return project_context(doc, judgments, domain=domain, as_of=today, matters=matters)
+
+
+def project_context(doc, judgments, *, domain, as_of, matters):
+    """Apply the existing lifecycle and exact-matter rules to authorized snapshots."""
     if matters is not None:
         schema.require(isinstance(matters, list) and all(schema.nonempty(x) for x in matters),
                        "matters must be a list of nonempty exact matter names")
         matters = set(matters)
     eligible = [
         ep for ep in doc.episodes
-        if ep["date"] <= today and (ep["expires_on"] is None or ep["expires_on"] >= today)
+        if ep["date"] <= as_of and (ep["expires_on"] is None or ep["expires_on"] >= as_of)
     ]
     disputed = {ep["relevance"] for ep in eligible if ep["state"] == "unresolved"}
     current = []
@@ -200,7 +205,7 @@ def mutate(
             raise memory_io.MemoryConflictError("Judgment ledger changed; re-read before writing")
     rendered = doc.render_v2()
     schema.parse(rendered)
-    result = update(Path(memory), rendered, snapshot)
+    result = memory_io.atomic_write(memory, rendered, snapshot.version)
     return {"status": "updated", "id": eid, "backup": str(result.backup_path)}
 
 

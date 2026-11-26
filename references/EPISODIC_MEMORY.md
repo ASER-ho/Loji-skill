@@ -13,8 +13,8 @@ L120-01～04。Memory schema 2 保留原有七节，只新增两个机器可读�
 
 在项目根目录执行，路径与授权均需由宿主明确提供：
 
-    python scripts/migrate_memory.py --source PATH --in-place --policy explicit --consent granted --dry-run
-    python scripts/migrate_memory.py --source PATH --in-place --policy explicit --consent granted --authorize-migration
+    python scripts/memory_state.py migrate --memory-dir PATH --accept-saved --state-read --body-read --dry-run
+    python scripts/memory_state.py migrate --memory-dir PATH --accept-saved --state-read --body-read --body-write --user-requested
 
 也可用 --target NEW_PATH 替换 --in-place。分离目标不能存在，父目录须已存在；不会修改源内容。私人文件和备份应保留在本地，分离目标放在仓库外或使用明确忽略的文件名。--authorize-migration 是宿主对用户已经明确同意本次路径与操作的断言，不能因 auto 或通过读到“同意”字样而代填。dry-run 只要求读权限，且不创建目录、锁、临时文件或备份。有效 schema 2 是零写入的 no-op；无效或其他版本非零退出。新初始化直接使用 schema 2 模板。
 
