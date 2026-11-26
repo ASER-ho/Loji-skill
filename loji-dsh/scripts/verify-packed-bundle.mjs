@@ -26,7 +26,7 @@ const required = [
   "loji-dsh/lib/index.js",
   "loji-dsh/lib/skill-meta.json",
   "loji-dsh/cordis.patch.yml",
-  "loji-dsh/presets/upstream/standard-0.2.2-rc.1.patch.yml",
+  "loji-dsh/presets/upstream/standard-0.2.2-rc.5.patch.yml",
   "loji-dsh/scripts/gen-preset-patch.mjs",
   "loji-dsh/scripts/verify-install.mjs",
 ];

@@ -1,5 +1,5 @@
 /** Deterministic rendering shared by the generator and read-only diagnostics. */
-export const SNAPSHOT_VERSION = "0.2.2-rc.1";
+export const SNAPSHOT_VERSION = "0.2.2-rc.5";
 export const SNAPSHOT_PATH = `loji-dsh/presets/upstream/standard-${SNAPSHOT_VERSION}.patch.yml`;
 export const PATCH_PATH = "loji-dsh/cordis.patch.yml";
 
