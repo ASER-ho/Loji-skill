@@ -16,6 +16,9 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Check the Skill context budget
+        run: python scripts/skill_budget.py
+
       - name: Validate repository
         run: python scripts/validate_repo.py --strict
 

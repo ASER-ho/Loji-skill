@@ -139,9 +139,9 @@ class ValidateRepoTests(unittest.TestCase):
     def test_skill_size_mismatch_fails(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            (root / "SKILL.md").write_text("\n".join(["x"] * 501), encoding="utf-8")
+            (root / "SKILL.md").write_text("\n".join(["x", ""] * 125 + ["x"]), encoding="utf-8")
             errors = validate_repo.check_skill_size(root)
-            self.assertTrue(any("501" in error for error in errors), errors)
+            self.assertEqual(errors, ["SKILL.md: 251 physical lines > 250"])
 
     def test_memory_schema_policy_mismatch_fails(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

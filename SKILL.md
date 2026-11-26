@@ -214,9 +214,9 @@ Codex 接入按 `references/CODEX_SETUP.md`，确认目录和恢复许可后才�
 
 1. 先核对同一授权。off 或状态未知不读，read_only 不写，explicit 仅用户明确要求时写。
 2. 重复表态或态度改变不算新证据。改判须有可核查的新证据，用 `supersedes` 建新记录并保留旧依据。
-3. 仅当 `topic_key` 匹配或用户提及时关联。单轮最多主动引用一条，不自动外发或建立后台服务。
+3. 仅当 `topic_key` 匹配或用户提及时关联。每次回复最多主动引用一个历史判断，不自动外发或建立后台服务。
 4. 置信度见锚点 2。有新证据则重新评估。
-5. 解释判断机制时仅读规则和模板，账本正文保持私有。
+5. 解释判断机制或元问题时仅读规则和模板，不读取账本正文。
 
 合同见 `references/JUDGMENT_CONTINUITY.md`，模板 `judgments.template.md`，校验 `scripts/validate_judgments.py`。
 
