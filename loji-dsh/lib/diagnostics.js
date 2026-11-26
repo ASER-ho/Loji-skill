@@ -10,6 +10,21 @@ const ENTRY = "loji-dsh/lib/index.js";
 const META = "loji-dsh/lib/skill-meta.json";
 const STAGE_KEYS = ["package", "entry", "skillProvider", "preset", "persona", "resources", "modes"];
 const snapshotFile = new URL("../../" + SNAPSHOT_PATH, import.meta.url);
+// Include the indirectly referenced recovery contract and the recovery CLI's local imports.
+const REQUIRED_RESOURCES = [
+  "references/STYLE.md",
+  "references/RECOVERY_CONTEXT.md",
+  "research/ANALYSIS_MODELS.md",
+  "scripts/episodic_memory.py",
+  "scripts/evidence_identity.py",
+  "scripts/judgment_ledger.py",
+  "scripts/memory_io.py",
+  "scripts/memory_schema.py",
+  "scripts/memory_state.py",
+  "scripts/migrate_memory.py",
+  "scripts/recovery_context.py",
+  "scripts/safe_state_write.py",
+];
 
 /** Read only bounded, regular text files. No external code or YAML expressions are evaluated. */
 export function readText(path) {
@@ -124,7 +139,7 @@ function inspectBundle(bundle, directory, stages) {
   }
   if (skill !== null) {
     const references = [...new Set([
-      "references/STYLE.md", "research/ANALYSIS_MODELS.md",
+      ...REQUIRED_RESOURCES,
       ...[...skill.matchAll(/(?:references|research)\/[a-zA-Z0-9_.-]+(?:\/[a-zA-Z0-9_.-]+)*\.(?:md|json)\b/g)]
         .map(match => match[0])
         .filter(path => !path.split("/").some(part => part === ".." || part === ".")),
@@ -161,41 +176,45 @@ function applyObservations(stages, observed) {
   }
 }
 
-function readStandard({ standardPath, version, directory, installDir }) {
-  if (standardPath) {
+function readLauncherInstall(installDir) {
+  if (typeof installDir !== "string" || !isAbsolute(installDir)) return {};
+  try {
+    const root = realpathSync(installDir);
+    const manifest = JSON.parse(readPackageText(root, "package.json"));
+    const version = versionOrNull(manifest.version);
+    if (manifest.name === "@deepseek-ai/dsh" && version) return { root, version };
+  } catch {
+    // Launcher version is unverified if the installation manifest cannot be read.
+  }
+  return {};
+}
+
+function readOptionalText(path) {
+  if (!path) return undefined;
+  try {
+    return readText(path);
+  } catch {
+    return undefined;
+  }
+}
+
+function readShippedStandard(launcherRoot, profileRoot) {
+  if (!launcherRoot && !profileRoot) return {};
+  try {
+    const root = launcherRoot
+      ? realpathSync(dirname(createRequire(join(launcherRoot, "package.json")).resolve("@deepseek-ai/dsh-web-app/package.json")))
+      : realpathSync(join(profileRoot, "node_modules", "@deepseek-ai", "dsh-web-app"));
+    if (!launcherRoot && !isBelow(profileRoot, root)) return {};
+    const manifest = JSON.parse(readPackageText(root, "package.json"));
+    if (manifest.name !== "@deepseek-ai/dsh-web-app") return {};
+    const version = versionOrNull(manifest.version);
     try {
-      return { text: readText(standardPath), version };
+      return { text: readPackageText(root, "presets/standard.patch.yml"), version };
     } catch {
       return { version };
     }
-  }
-  if (installDir && isAbsolute(installDir)) {
-    let runtimeVersion;
-    try {
-      const root = realpathSync(installDir);
-      const manifest = JSON.parse(readPackageText(root, "package.json"));
-      if (manifest.name === "@deepseek-ai/dsh") runtimeVersion = versionOrNull(manifest.version);
-      const fromLauncher = createRequire(join(root, "package.json"));
-      const module = fromLauncher.resolve("@deepseek-ai/dsh-web-app/package.json");
-      const app = JSON.parse(readText(module));
-      if (runtimeVersion && app.name === "@deepseek-ai/dsh-web-app") {
-        const text = readPackageText(realpathSync(dirname(module)), "presets/standard.patch.yml");
-        return { text, version: runtimeVersion };
-      }
-    } catch {
-      // Development or older installations may expose only the runtime version.
-    }
-    if (runtimeVersion) return { version: runtimeVersion };
-  }
-  if (!directory) return { version };
-  try {
-    const root = realpathSync(join(directory, "node_modules", "@deepseek-ai", "dsh-web-app"));
-    if (!isBelow(directory, root)) return { version };
-    const manifest = JSON.parse(readPackageText(root, "package.json"));
-    if (manifest.name !== "@deepseek-ai/dsh-web-app") return { version };
-    return { text: readPackageText(root, "presets/standard.patch.yml"), version: versionOrNull(manifest.version) };
   } catch {
-    return { version };
+    return {};
   }
 }
 
@@ -207,20 +226,33 @@ export function verifyInstallation({ home, profileId, packageRoot, standardPath,
   const inspection = bundle.root ? inspectBundle(bundle, directory, stages) : { present: false, packageDigest: null };
   if (!bundle.root) stages.package = stage(bundle.missing ? "fail" : "unknown", bundle.reason);
 
-  const standard = readStandard({
-    standardPath, directory, version: versionOrNull(hostVersion),
-    installDir: selection.launched ? launcher.installDir : undefined,
-  });
-  const suppliedVersion = versionOrNull(hostVersion);
-  const observedVersion = versionOrNull(observation?.hostVersion);
-  const conflictingVersions = new Set([standard.version, suppliedVersion,
-    selection.observed ? observedVersion : null].filter(Boolean)).size > 1;
-  let runtimeEvidence = observation ? "observation_scope_or_package_mismatch" : "observation_not_supplied";
+  const installDir = selection.launched ? launcher.installDir : undefined;
+  const install = readLauncherInstall(installDir);
+  const shipped = readShippedStandard(install.root, directory);
+  const explicit = readOptionalText(standardPath);
+  const standard = standardPath ? explicit : shipped.text;
+  const versionSources = {
+    launcher: install.version ?? null,
+    template: shipped.version ?? null,
+    argument: versionOrNull(hostVersion),
+    observation: selection.observed ? versionOrNull(observation.hostVersion) : null,
+  };
+  const conflictingVersions = new Set(Object.values(versionSources).filter(Boolean)).size > 1;
+  let evidenceIssue;
+  if (conflictingVersions) {
+    evidenceIssue = "conflicting_version_sources";
+  } else if (installDir && !install.version) {
+    evidenceIssue = "launcher_version_unverified";
+  } else if (explicit !== undefined && shipped.text !== undefined
+    && normalizeNewlines(explicit).trimEnd() !== normalizeNewlines(shipped.text).trimEnd()) {
+    evidenceIssue = "conflicting_standard_sources";
+  }
+  let runtimeEvidence = evidenceIssue ?? (observation ? "observation_scope_or_package_mismatch" : "observation_not_supplied");
   let observed;
   if (selection.observed && bundle.installed && inspection.packageDigest
     && observation?.packageDigest === inspection.packageDigest
     && observation.checks && typeof observation.checks === "object" && !Array.isArray(observation.checks)
-    && !conflictingVersions) {
+    && !evidenceIssue) {
     observed = observation.checks;
     runtimeEvidence = "operator_observation_matches_profile_and_package";
   } else if (selection.observed) {
@@ -228,10 +260,11 @@ export function verifyInstallation({ home, profileId, packageRoot, standardPath,
     profile.kind = "unknown";
   }
   applyObservations(stages, observed);
-  const version = conflictingVersions ? null : standard.version ?? suppliedVersion ?? (observed ? observedVersion : null);
-  let drift = compareStandard(readText(snapshotFile), standard.text, version);
-  if (conflictingVersions) {
-    drift = { ...drift, drift: null, status: "unknown", reason: "conflicting_version_sources" };
+  const version = conflictingVersions ? null : install.version ?? shipped.version ?? versionSources.argument
+    ?? (observed ? versionSources.observation : null);
+  let drift = compareStandard(readText(snapshotFile), standard, version);
+  if (evidenceIssue) {
+    drift = { ...drift, drift: null, status: "unknown", reason: evidenceIssue, versionSources };
   }
   return {
     ...summarizeCapabilities({ profile, hostVersion: version, drift, present: inspection.present, stages, observed }),

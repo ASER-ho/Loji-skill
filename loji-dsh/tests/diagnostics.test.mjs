@@ -44,7 +44,7 @@ function fixture(t) {
   write(packageRoot, "SKILL.md", skill);
   write(packageRoot, SNAPSHOT_PATH, template);
   write(packageRoot, PATCH_PATH, renderPreset(skill, template));
-  for (const directory of ["references", "research"]) {
+  for (const directory of ["references", "research", "scripts"]) {
     cpSync(join(repository, directory), join(packageRoot, directory), { recursive: true });
   }
   write(webAppRoot, "package.json", { name: "@deepseek-ai/dsh-web-app", version: SNAPSHOT_VERSION });
@@ -157,6 +157,75 @@ test("official launcher identity locates the running profile and its shipped tem
   });
   assert.equal(shell.status, 2);
   assert.equal(JSON.parse(shell.stdout).profile.source, "launcher_environment");
+});
+
+test("an explicit template and older observations cannot hide a launcher upgrade", (t) => {
+  const { home, profileRoot } = fixture(t);
+  const installDir = join(home, "synthetic-install", "node_modules", "@deepseek-ai", "dsh");
+  const launcher = { profileId: "web", directory: profileRoot, installDir };
+  const standardPath = write(home, "operator-standard.patch.yml", template);
+  write(installDir, "package.json", { name: "@deepseek-ai/dsh", version: SNAPSHOT_VERSION });
+  const options = { home, profileId: "web", launcher, standardPath, hostVersion: SNAPSHOT_VERSION };
+  const observation = runtimeObservation(verifyInstallation(options));
+  assert.equal(verifyInstallation({ ...options, observation }).overall, "supported");
+
+  const version = "0.2.3-alpha.2";
+  write(installDir, "package.json", { name: "@deepseek-ai/dsh", version });
+  const upgrade = verifyInstallation({ ...options, observation });
+  assert.equal(upgrade.overall, "unknown");
+  assert.equal(upgrade.drift.reason, "conflicting_version_sources");
+  assert.equal(upgrade.drift.versionSources.launcher, version);
+  assert.equal(upgrade.services.skills, "unknown");
+  const withoutVersion = verifyInstallation({ ...options, hostVersion: undefined });
+  assert.equal(withoutVersion.hostVersion, version);
+  assert.equal(withoutVersion.drift.drift, true);
+  rmSync(join(installDir, "package.json"));
+  assert.equal(verifyInstallation({ ...options, observation }).drift.reason, "launcher_version_unverified");
+});
+
+test("a launcher template conflicting with an explicit copy keeps compatibility unknown", (t) => {
+  const { home, profileRoot } = fixture(t);
+  const installDir = join(home, "synthetic-install", "node_modules", "@deepseek-ai", "dsh");
+  const web = join(installDir, "node_modules", "@deepseek-ai", "dsh-web-app");
+  write(installDir, "package.json", { name: "@deepseek-ai/dsh", version: SNAPSHOT_VERSION });
+  write(web, "package.json", { name: "@deepseek-ai/dsh-web-app", version: SNAPSHOT_VERSION });
+  write(web, "presets/standard.patch.yml", template.replace("maxBytes: 65536", "maxBytes: 32768"));
+  const options = {
+    home, profileId: "web", launcher: { profileId: "web", directory: profileRoot, installDir },
+    standardPath: write(home, "operator-standard.patch.yml", template), hostVersion: SNAPSHOT_VERSION,
+  };
+  const report = verifyInstallation({ ...options, observation: runtimeObservation(verifyInstallation(options)) });
+  assert.equal(report.overall, "unknown");
+  assert.equal(report.drift.reason, "conflicting_standard_sources");
+  assert.equal(report.services.skills, "unknown");
+  write(web, "package.json", { name: "@deepseek-ai/dsh-web-app", version: "0.2.3-alpha.2" });
+  const differingVersion = verifyInstallation(options);
+  assert.equal(differingVersion.drift.reason, "conflicting_version_sources");
+  assert.equal(differingVersion.drift.versionSources.template, "0.2.3-alpha.2");
+});
+
+test("recovery contract and runtime dependency loss invalidates the package observation", (t) => {
+  const { home, packageRoot } = fixture(t);
+  const options = { home, profileId: "web" };
+  const initial = verifyInstallation(options);
+  const observation = runtimeObservation(initial);
+  const guide = "references/RECOVERY_CONTEXT.md";
+  const original = read(guide);
+  write(packageRoot, guide, original + "\n");
+  const changed = verifyInstallation({ ...options, observation });
+  assert.notEqual(changed.packageDigest, initial.packageDigest);
+  assert.equal(changed.services.skills, "unknown");
+
+  for (const resource of [guide, "scripts/safe_state_write.py"]) {
+    rmSync(join(packageRoot, resource));
+    const missing = verifyInstallation({ ...options, observation });
+    assert.equal(missing.stages.resources.status, "fail", resource);
+    assert.equal(missing.stages.resources.code, "package_resource_unavailable", resource);
+    assert.equal(missing.packageDigest, null, resource);
+    assert.equal(missing.overall, "unknown", resource);
+    write(packageRoot, resource, read(resource));
+  }
+  assert.equal(verifyInstallation({ ...options, observation }).overall, "supported");
 });
 
 test("diagnostics pinpoints missing bundle, entry, and resource stages", (t) => {
