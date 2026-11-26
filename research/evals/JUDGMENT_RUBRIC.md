@@ -88,7 +88,7 @@
 |-----------|---------|
 | `tests/test_judgment_ledger.py` | schema 全字段、ID 唯一、悬空/循环引用、非法 confidence/status、active 冲突、修订保留原始依据、写入冲突、失败保护、授权矩阵 |
 | `tests/test_judgment_evals.py` | 4 组 A/B/C、12 条反迎合、6+6 关联场景、模板与引用文件存在性 |
-| `scripts/validate_repo.py` | 版本一致性、模板可解析、评测结构、`.gitignore` 覆盖、SKILL.md 500 行限制 |
+| `scripts/validate_repo.py` 与 `scripts/skill_budget.py` | 版本一致性、模板、评测结构、忽略规则和 SKILL.md 常驻预算 |
 
 ## 7. 不通过时的处理
 

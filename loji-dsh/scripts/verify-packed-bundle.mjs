@@ -9,6 +9,7 @@ import { readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { resolve, join } from "node:path";
 import { pathToFileURL } from "node:url";
+import { spawnSync } from "node:child_process";
 
 const rootArg = process.argv[2];
 if (!rootArg) throw new Error("Pass extracted npm package directory");
@@ -25,8 +26,9 @@ const required = [
   "loji-dsh/lib/index.js",
   "loji-dsh/lib/skill-meta.json",
   "loji-dsh/cordis.patch.yml",
-  "loji-dsh/presets/upstream/standard-0.2.2-rc.1.patch.yml",
+  "loji-dsh/presets/upstream/standard-0.2.2-rc.5.patch.yml",
   "loji-dsh/scripts/gen-preset-patch.mjs",
+  "loji-dsh/scripts/verify-install.mjs",
 ];
 for (const path of required) {
   assert.ok(existsSync(join(root, path)), "Missing file from packed archive: " + path);
@@ -50,8 +52,13 @@ assert.equal(loaded.content, await readFile(join(root, "SKILL.md"), "utf8"));
 const metadata = JSON.parse(await readFile(join(root, "loji-dsh/lib/skill-meta.json"), "utf8"));
 assert.equal(metadata.name, "loji-skill");
 assert.equal(metadata.version, "1.1.4");
-const patch = await readFile(join(root, "loji-dsh/cordis.patch.yml"), "utf8");
+const patch = (await readFile(join(root, "loji-dsh/cordis.patch.yml"), "utf8")).replace(/\r\n/g, "\n");
 assert.match(patch, /id: loji-skill\n      name: loji-dsh/);
 assert.match(patch, /id: preset-loji\n      name: '@deepseek-ai\/dsh-agent-preset'/);
 assert.match(patch, /id: loji\n        name: 长征机\/逻辑/);
+const diagnostic = spawnSync(process.execPath,
+  [join(root, "loji-dsh/scripts/verify-install.mjs"), "--package-root", root],
+  { encoding: "utf8", env: { ...process.env, DSH_HOME: "", DSH_PROFILE_DIR: "" } });
+assert.equal(diagnostic.status, 2, diagnostic.stderr);
+assert.equal(JSON.parse(diagnostic.stdout).stages.persona.status, "pass");
 console.log("Packed loji-dsh bundle: manifest, resources, provider, and preset declaration OK");
