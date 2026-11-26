@@ -36,7 +36,7 @@ v1.1.4 聚焦五项能力：统一行为评测协议与固定场景、记忆与�
 
 **完整项目恢复**：按需联合普通 Memory 中的目标、预算、期限、状态及待办，与 context 校验后的有效经历、判断依据和未决冲突。项目名不等于事项名；无法确定完整事项集合且用户未限定范围时，允许在当前授权、固定记忆目录内检查一次现有全范围 context，然后区分相关、无关与归属不明事项。这不允许全盘搜索、跨目录扫描或扩大权限。见[联合恢复规则](references/CONTEXT_LOADING.md)。
 
-**验证与范围**：L114-DEV-01 由 Claude 实施；L114-FINAL-GATE-01 由 Codex 独立审查修正，H114-01、02、04、05及H113授权兼容验证通过。历史H114-03为PARTIAL，后续L114-CONTEXT-FIX-01的R1～R4全部通过，包括两次独立大样本会话。309/309自动回归、严格检查及官方skills-ref 0.1.0通过。实际验证限于项目级Codex宿主和固定合成数据，不代表所有规模、模型、安装方式或宿主都能自动恢复项目；不宣称人格或判断评分显著提升，也未证明稳定Token、费用、延迟或总体任务性能收益。L114-RELEASE-01批准正式发布。
+**验证与范围**：L114-DEV-01 由 Claude 实施；L114-FINAL-GATE-01 由 Codex 独立审查修正，H114-01、02、04、05及H113授权兼容验证通过。历史H114-03为PARTIAL，后续L114-CONTEXT-FIX-01的R1～R4全部通过，包括两次独立大样本会话。341/341自动回归、严格检查及官方skills-ref 0.1.0通过。实际验证限于项目级Codex宿主和固定合成数据，不代表所有规模、模型、安装方式或宿主都能自动恢复项目；不宣称人格或判断评分显著提升，也未证明稳定Token、费用、延迟或总体任务性能收益。L114-RELEASE-01批准正式发布。
 
 ## 快速开始
 
@@ -196,9 +196,9 @@ dsh plugin add github:ASER-ho/Loji-skill
 # 等价写法：dsh plugin add https://github.com/ASER-ho/Loji-skill
 ```
 
-新包名 `loji-dsh`、版本 `1.0.0`；技能注册名始终为 `loji-skill`（当前技能版本 `1.1.4`）。插件直接读取根目录 `SKILL.md` 和相关资源，无需另存一份技能。本插件现已声明角色模式 ID `loji`、显示名「长征机/逻辑」，人格源自根目录 `SKILL.md` 的角色身份与行为规则。**仅完成代码与静态 CI 验证；尚未在 DSH Desktop 完成安装及实际对话验收。**原 `dsh-loji` 插件若已安装，需先核对并移除旧插件，避免同名技能重复注册。用户自行安装的同名技能可能优先于随包版本。
+新包名 `loji-dsh`、版本 `1.0.0`；技能注册名始终为 `loji-skill`（当前技能版本 `1.1.4`）。插件直接读取根目录 `SKILL.md` 和相关资源，无需另存一份技能。本插件现已声明角色模式 ID `loji`、显示名「长征机/逻辑」，人格源自根目录 `SKILL.md` 的角色身份与行为规则。**已在本机 DSH Desktop（`0.2.2-rc.5`, Electron 44.7.0）完成安装、真实多轮对话、记忆写盘与跨会话恢复验收**：Standard 与「长征机/逻辑」两种模式各 2 轮真实对话正常，`references/` 与 `research/` 资源解析、预设可见性、以及「对话代号不写盘」的记忆合同均已观测；升级、回滚与 bundle 缺失冲突演练通过；在隔离目录完成真实写盘（`memory.md` 3026 → 3431 字节、写入前后 sha256 核验一致）并由另一个新会话读回。固定快照已迁移到 `0.2.2-rc.5`，`verify-install` 报 `drift: matched`、`overall: supported`（退出码 0）。完整证据见 [Desktop 验收记录](docs/DESKTOP_ACCEPTANCE.md)。原 `dsh-loji` 插件若已安装，需先核对并移除旧插件，避免同名技能重复注册。用户自行安装的同名技能可能优先于随包版本。
 
-默认目录为 `~/.dsh/skills`，上述命令遵守已设置的 `DSH_HOME`。启用默认技能目录时也可使用 `~/.agents/skills`，或 `DSH_AGENTS_HOME` 下的 `skills`；自定义目录按 [客户端文档](https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/skill/skill-filesystem/README.md) 配置。本版本尚未完成 DeepSeek Harness 的同等跨会话恢复验收。
+默认目录为 `~/.dsh/skills`，上述命令遵守已设置的 `DSH_HOME`。启用默认技能目录时也可使用 `~/.agents/skills`，或 `DSH_AGENTS_HOME` 下的 `skills`；自定义目录按 [客户端文档](https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/skill/skill-filesystem/README.md) 配置。本版本在 DSH Desktop 上完成了插件加载与对话验收，但「跨会话记忆写盘与恢复」未在 Desktop 上单独验收（本轮按记忆合同未触发写入）。
 
 </details>
 

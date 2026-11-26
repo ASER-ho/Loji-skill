@@ -1,5 +1,16 @@
 # Changelog
 
+## 未发布 — Skill 减负与记忆可靠性（loji-dsh 1.0.0 真机验收）
+
+- 技能入口减负：`SKILL.md` 由 498 行 / 8,941 汉字压缩到 238 行 / 3,597 汉字，九条人格锚点、地球online 四结果表、四形态模板、情感边界三行与近名技能让位条款全部保留；示例与指南迁至 `references/`，运行时规则折叠为有界核心。触发描述（`trigger_queries.json` 11 正 13 负）与 `validate_repo.py:519` 断言子串未改。
+- 预算门禁：新增 `scripts/skill_budget.py`（行数 238 / 汉字 3,597 / 最长非列表段 118 字符），上限由 500 收到 250，CI 第一步即执行；`docs/SKILL_CONTEXT_CONTRACT.md` 记录体积合同。
+- 记忆可靠性：`scripts/recovery_context.py` 增加有字节上限的上下文恢复、`scripts/evidence_identity.py` 做证据回查与文件指纹、`scripts/safe_state_write.py` 提供原子写入与并发冲突检测，并补充崩溃恢复、旧备份不得复活已遗忘内容的回归。
+- 宿主快照信任：`fix(memory): reject stale host snapshots on configuration and mutation`——配置与写入前校验宿主快照新鲜度。
+- DSH 诊断：`loji-dsh/lib/diagnostics.js` 增加只读安装检查、Profile 识别与版本漂移报告；同版本升级即使返回成功，宿主仍可能加载旧目录，因此改为以 `packageDigest` + `profile.fingerprint` 判定实际加载物。
+- 固定快照迁移：`SNAPSHOT_VERSION` 与 `loji-dsh/presets/upstream/standard-0.2.2-rc.5.patch.yml` 对齐宿主 `0.2.2-rc.5`（官方 commit `9c2670d3bce5275e0d1610272958121af87787bb`，23 个插件），`cordis.patch.yml` 重新生成；`verify-install` 的 `drift` 由 `unknown` 变为 `matched`，`overall` 由 `unknown`（退出码 2）变为 `supported`（退出码 0）。
+- 验证：341 项 Python 回归、16 项 DSH 测试、`gen-preset-patch.mjs --check`、`skill_budget.py`、`npm pack` 打包校验全部通过。本机 DSH Desktop（`0.2.2-rc.5`，Electron 44.7.0）完成 Standard 与「长征机/逻辑」两模式各 2 轮真实多轮对话验收，完成升级与回滚、bundle 缺失冲突演练，并在隔离目录完成记忆写盘与跨会话恢复验收（12 项真机用例 + 真实对话写入 + 新会话读回），证据见 [Desktop 验收](docs/DESKTOP_ACCEPTANCE.md)。
+- 发布：本条目随 `master` 合并与 `loji-dsh-v1.0.0` 发布标记一并对外。
+
 ## v1.1.4（正式版本）— Memory & Reasoning Enhancements
 
 - L114-01：新增统一行为评测协议、人格保真度 14 场景、合成记忆检索 12 用例、判断证据 8 场景与轻量评测入口；确定性检查与真实模型行为检查分离，答题与评分分离，授权/隐私/锚点破坏/伪造证据为零容忍失败项。
