@@ -50,6 +50,9 @@ def parse(data: bytes) -> dict:
         raise StateError("state exceeds size limit")
     try:
         state = json.loads(data.decode("utf-8"), object_pairs_hook=_pairs)
+    except StateError:
+        # Keep the specific diagnostic raised by the pairs hook.
+        raise
     except (UnicodeError, ValueError, RecursionError) as exc:
         raise StateError("invalid state JSON") from exc
     if not isinstance(state, dict) or set(state) != {"memory_policy", "confirmed"}:
