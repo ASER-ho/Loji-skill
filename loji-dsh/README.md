@@ -43,4 +43,47 @@ The CI also runs `npm pack`, extracts the **actual distributable archive**, impo
 
 **Target template:** DSH Web App `0.2.2-rc.1` public snapshot (22 top-level preset entries). This matches the earlier locally inspected target template (22 entries). The user's installed Desktop version has not been read by this workflow. Compare its installed `standard.patch.yml` and available modules first; do not assume compatibility merely because this archive passes CI. If they differ, adapt and revalidate before replacing an existing installation.
 
+### Read-only installation diagnostics
+
+Run from the repository or an extracted package with Node.js 22 or later.
+
+```powershell
+node loji-dsh/scripts/verify-install.mjs --home 'C:\path\to\isolated-dsh' --profile web
+node loji-dsh/scripts/verify-install.mjs --package-root .
+node loji-dsh/scripts/gen-preset-patch.mjs --check --host-standard 'C:\path\to\standard.patch.yml' --host-version 0.2.3-alpha.2
+```
+
+`--home` defaults to the calling process's `DSH_HOME` when set, then uses the home reported by the DSH shell. Supply the profile ID from the active launch or host diagnostics. With no explicit profile, resolution requires one candidate directory and matching DSH launcher facts or an operator observation. Multiple candidates, conflicting evidence and unavailable files produce an `unknown` result. `--package-root` can inspect a package independently or confirm an intentionally linked package. A runtime result requires that the path match the selected profile's installed package. [DSH shell environment](https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/shell/shell-env/README.md)
+
+The script reads the selected profile's package manifest and the Loji bundle's entrypoint, metadata, preset and referenced files. It looks for `@deepseek-ai/dsh-web-app/presets/standard.patch.yml` in the installation reported by a matching DSH launcher, then in the profile's own packages if the launcher was unavailable. For layouts that ship the standard template elsewhere, pass its path and the observed runtime version with `--host-standard` and `--host-version`. The drift report shows newly added or missing top-level plugin IDs, changed stanza fields and order changes. Version mismatch or a template layout the scanner cannot interpret leaves compatibility unknown. The diagnostic reads files without evaluating Cordis expressions or launching the host. [Upstream Standard preset](https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/bundle/web-app/presets/standard.patch.yml)
+
+After testing the installed bundle in the real host, copy the diagnostic report's `profile.fingerprint` and `packageDigest` into a local observations JSON file. Record only measured booleans and the actual provider rank. Omit any check you could not observe. Use `--observations <file>` to associate the results with the selected installation. This records operator observations, which should be refreshed after changes to the profile, package or host. A synthetic observations file tests the diagnostic contract only. Keep transcripts, credentials, local paths and raw configuration out of the observations file.
+
+```json
+{
+  "profileId": "web",
+  "profileFingerprint": "<from report>",
+  "packageDigest": "<from report>",
+  "kind": "web",
+  "hostVersion": "0.2.2-rc.1",
+  "checks": {
+    "entryLoaded": true,
+    "providerRegistered": true,
+    "providerSelected": true,
+    "providerRank": 600,
+    "presetLoaded": true,
+    "presetSelected": true,
+    "presetResources": true,
+    "standardResources": true,
+    "presetDialogue": true,
+    "standardDialogue": true,
+    "sessionController": true
+  }
+}
+```
+
+Check the loaded plugin rows in DSH's Built-in plugins screen. Select the Loji preset and invoke `skill("loji-skill")`. Confirm the winning provider and resolve a packaged `references/` and `research/` file. Repeat resource resolution in Standard mode and record the outcome of real multiround dialogue in both modes. Verify session creation and mode changes before marking `sessionController`. Record the exact tested commit separately.
+
+The install check exits with 0 for a matching template and complete observations, 1 for a failed stage, and 2 for insufficient or conflicting evidence. The preset generation check exits with 1 for a stale generated artifact and 2 when an explicitly supplied host template remains unmatched or unavailable.
+
 **Real Windows/DSH acceptance (not yet executed):** First record the currently installed `dsh-loji` bundle and any custom `loji-skill` copies; back up affected profile configuration. For a controlled test, install the exact commit of this PR using the DSH plugin manager, then inspect its plugin diagnostic for both `loji-skill` and `preset-loji`. Open a new session, select `长征机/逻辑`, verify that the role persists across ordinary turns, and invoke `skill("loji-skill")` to confirm which provider and file actually won. Also verify Standard mode remains unchanged. Record the tested Desktop version, exact Git commit, observed roster and tool output, and any errors. Do not claim this acceptance passed until those observations exist.

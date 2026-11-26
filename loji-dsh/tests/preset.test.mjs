@@ -4,7 +4,7 @@ import {readFileSync} from "node:fs";
 import {fileURLToPath} from "node:url";
 import {join} from "node:path";
 const root=fileURLToPath(new URL("../../",import.meta.url));
-const read=(p)=>readFileSync(join(root,p),"utf8");
+const read=(p)=>readFileSync(join(root,p),"utf8").replace(/\r\n/g, "\n");
 test("generated DSH preset declaration contains both independent services",()=>{
   const text=read("loji-dsh/cordis.patch.yml");
   assert.match(text,/id: loji-skill\n      name: loji-dsh/);
