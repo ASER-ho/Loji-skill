@@ -202,6 +202,18 @@ class SafeStateTests(unittest.TestCase):
         self.assertEqual(state.migrate(user_requested=True).status, "migrated")
         self.assertEqual(schema.parse(self.target.read_text(encoding="utf-8")).version, 2)
 
+    def test_caller_state_digest_rejects_stale_second_choice(self):
+        first = ms.MemoryState(self.root, HOST)
+        second = ms.MemoryState(self.root, HOST)
+        first.configure("auto", user_confirmed=True, expected_digest="absent")
+        original = second.status()["state_digest"]
+        first.configure("off", user_confirmed=True, expected_digest=original)
+        with self.assertRaises(io.MemoryConflictError):
+            second.configure("explicit", user_confirmed=True, expected_digest=original)
+        self.assertEqual(first.status()["saved"]["memory_policy"], "off")
+        with self.assertRaises(io.MemoryConflictError):
+            second.reset(user_requested=True, expected_digest="absent")
+
     def test_future_schema_is_never_migrated_or_rewritten(self):
         tmpl = Path(__file__).resolve().parents[1] / "memory.template.md"
         unknown = tmpl.read_text(encoding="utf-8").replace("schema_version: 2", "schema_version: 99")

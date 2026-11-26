@@ -132,35 +132,42 @@ class MemoryState:
             self._paths()
             yield
 
-    def _saved(self):
+    def _state_bytes(self):
         # Bound read before JSON parsing; do not allocate arbitrary file sizes.
         path = io.guard.managed_path(self.path, root=self.folder)
         with path.open("rb") as handle:
             io.guard.checked_fd(path, handle.fileno())
-            return parse(handle.read(MAX_STATE_BYTES + 1))
+            return handle.read(MAX_STATE_BYTES + 1)
 
-    def configure(self, policy: str, *, user_confirmed: bool = False):
+    def _saved(self):
+        return parse(self._state_bytes())
+
+    def configure(self, policy: str, *, user_confirmed: bool = False, expected_digest=None):
         if type(policy) is not str or policy not in POLICIES or user_confirmed is not True:
             raise StateError("an explicit user choice of a legal policy is required")
         # Suspend old authorization if saving fails. The host must also retain
         # this suspension between CLI invocations after failed configuration.
         self._current = {"memory_policy": policy, "confirmed": True}
-        return self._store(self._current)
+        return self._store(self._current, expected_digest)
 
-    def reset(self, *, user_requested: bool = False):
+    def reset(self, *, user_requested: bool = False, expected_digest=None):
         if user_requested is not True:
             raise StateError("reset requires an explicit user request")
         self._current = {"memory_policy": "off", "confirmed": False}
-        return self._store(self._current)
+        return self._store(self._current, expected_digest)
 
-    def _store(self, state):
+    def _store(self, state, expected_digest):
         payload = (json.dumps(state, ensure_ascii=False, indent=2) + "\n").encode()
         with self._transaction(write=True):
             if self.path.exists():
                 # Corrupt state may be replaced only by explicit configuration.
                 version = io.read_version(self.path)
+                if expected_digest is not None and version.sha256 != expected_digest:
+                    raise io.MemoryConflictError("state changed since the host inspected it")
                 io.atomic_write(self.path, payload, version, timeout=self.timeout)
             else:
+                if expected_digest not in (None, "absent"):
+                    raise io.MemoryConflictError("previously observed state disappeared")
                 io.publish_new(self.path, payload, timeout=self.timeout)
             if self._saved() != state:
                 raise StateError("saved state did not verify")
@@ -218,9 +225,13 @@ class MemoryState:
                 auth = self._authorization()
                 result = dict(vars(auth))
                 try:
-                    result["saved"] = self._saved()
-                except (FileNotFoundError, StateError, OSError):
-                    result["saved"] = None
+                    payload = self._state_bytes()
+                    result["saved"] = parse(payload)
+                    result["state_digest"] = io.sha256_bytes(payload)
+                except FileNotFoundError:
+                    result.update(saved=None, state_digest="absent")
+                except (StateError, OSError):
+                    result.update(saved=None, state_digest=None)
                 return result
         except (StateError, OSError, io.MemoryIOError, io.guard.PathBoundaryError):
             return dict(vars(Authorization("off", "pending", False, False,
@@ -270,6 +281,7 @@ def main(argv=None):
     parser.add_argument("--host-policy", choices=sorted(POLICIES))
     parser.add_argument("--host-consent")
     parser.add_argument("--policy", choices=sorted(POLICIES))
+    parser.add_argument("--expected-digest", help="previously observed state or body SHA-256; absent for a new state")
     parser.add_argument("--operation", choices=("add", "transition", "forget", "outcome", "forget-domain"))
     parser.add_argument("--data", help="JSON payload for the existing Episode operation")
     parser.add_argument("--domain")
@@ -278,6 +290,8 @@ def main(argv=None):
     parser.add_argument("--dry-run", action="store_true", help="preview a schema migration")
     parser.add_argument("--migration-target", help="new absolute output path inside the approved directory")
     args = parser.parse_args(argv)
+    if args.expected_digest is not None and args.action not in ("set", "reset", "mutate"):
+        parser.error("--expected-digest applies to set, reset or mutate")
     if args.action != "context" and args.matters is not None:
         parser.error("--matters is only supported for context")
     if args.action != "migrate" and (args.dry_run or args.migration_target is not None):
@@ -290,9 +304,9 @@ def main(argv=None):
         if args.action == "status":
             result = state.status()
         elif args.action == "set":
-            result = state.configure(args.policy, user_confirmed=args.user_confirmed)
+            result = state.configure(args.policy, user_confirmed=args.user_confirmed, expected_digest=args.expected_digest)
         elif args.action == "reset":
-            result = state.reset(user_requested=args.user_requested)
+            result = state.reset(user_requested=args.user_requested, expected_digest=args.expected_digest)
         elif args.action == "context":
             matters = None
             if args.matters is not None:
@@ -311,7 +325,7 @@ def main(argv=None):
         else:
             result = state.mutate(args.operation, schema.decode_json(args.data if args.data is not None else "null"),
                                   user_requested=args.user_requested,
-                                  eligible_and_private=args.eligible_and_private)
+                                  eligible_and_private=args.eligible_and_private, expected_digest=args.expected_digest)
         print(json.dumps(result, ensure_ascii=True, default=str))
         return 0
     except (StateError, OSError, io.MemoryIOError, jl.JudgmentLedgerError, ValueError) as exc:

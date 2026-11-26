@@ -154,7 +154,7 @@ def _find(episodes, eid):
 
 def mutate(
     memory, ledger, action, data, *, policy, consent,
-    user_requested=False, eligible_and_private=False,
+    user_requested=False, eligible_and_private=False, expected_digest=None,
 ):
     """The host attests to the semantic and privacy checks before any write.
 
@@ -170,6 +170,8 @@ def mutate(
         raise AccessError("maintenance requires a specific user request")
     schema.require(isinstance(data, dict), "operation requires a JSON object")
     doc, snapshot = _load(memory, policy, consent, write=True, requested=user_requested is True)
+    if expected_digest is not None and expected_digest != snapshot.version.sha256:
+        raise memory_io.MemoryConflictError("Memory changed since the host inspected it")
     _, ledger_version = _ledger(doc.episodes, ledger, policy, consent)
     eid = None
     if action == "add":
