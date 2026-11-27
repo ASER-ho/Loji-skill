@@ -4,23 +4,70 @@ on:
   push:
   pull_request:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
 jobs:
   validate:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: loji-skill
+    env:
+      # Windows runners default to a legacy ANSI code page, which turns any
+      # script that prints Chinese into a UnicodeEncodeError traceback.
+      PYTHONUTF8: "1"
+      PYTHONIOENCODING: "utf-8"
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # README supports Python 3.11+ and ships PowerShell install paths,
+          # so both the lowest supported Python and Windows are exercised.
+          - os: ubuntu-latest
+            python: "3.12"
+          - os: ubuntu-latest
+            python: "3.11"
+          - os: windows-latest
+            python: "3.12"
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+        with:
+          path: loji-skill
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: ${{ matrix.python }}
 
       - name: Check the Skill context budget
         run: python scripts/skill_budget.py
 
       - name: Validate repository
         run: python scripts/validate_repo.py --strict
+
+      - name: Check release documentation consistency
+        run: python scripts/check_docs_consistency.py
+
+      - name: Validate with official skills-ref
+        shell: bash
+        run: |
+          # ROADMAP requires `skills-ref validate .`. When the tool cannot be
+          # installed this step reports ENV-BLOCKED; the local structural
+          # checks above are explicitly not counted as a skills-ref PASS.
+          if python -m pip install --quiet "git+https://github.com/agentskills/agentskills.git@83021e2be457a9b6679148719c1f6074f0ad975e#subdirectory=skills-ref" && command -v skills-ref >/dev/null 2>&1; then
+            # Pass a named directory; the validator treats "." as an empty basename.
+            skills-ref validate "$PWD"
+            echo "skills-ref: PASS"
+          else
+            echo "::warning title=ENV-BLOCKED::skills-ref unavailable; not counted as skills-ref PASS"
+          fi
 
       - name: Run tests
         run: python -m unittest discover -s tests -p "test_*.py"
@@ -45,8 +92,14 @@ jobs:
           python loji-dsh/scripts/validate_patch.py
 
       - name: Verify installable npm package contents
+        shell: bash
         run: |
+          # The archive name follows package.json, so it is resolved at run
+          # time instead of being hard-coded to a release version.
+          set -euo pipefail
           archive_dir="$(mktemp -d)"
-          npm pack --silent --pack-destination "$archive_dir"
-          tar -xzf "$archive_dir/loji-dsh-1.0.0.tgz" -C "$archive_dir"
+          filename="$(npm pack --silent --pack-destination "$archive_dir")"
+          archive="$archive_dir/$filename"
+          echo "Packed archive: $archive"
+          tar -xzf "$archive" -C "$archive_dir"
           node loji-dsh/scripts/verify-packed-bundle.mjs "$archive_dir/package"

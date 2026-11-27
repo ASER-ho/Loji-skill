@@ -1,0 +1,14 @@
+# Keep text fixtures and generated metadata consistent across platforms.
+* text=auto eol=lf
+
+# Binary assets must never be touched by the conversion above.
+*.gif binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.ico binary
+*.zip binary
+*.tgz binary
+*.woff binary
+*.woff2 binary

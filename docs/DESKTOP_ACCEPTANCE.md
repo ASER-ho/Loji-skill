@@ -87,5 +87,18 @@ rc.1 → rc.5 的真实 diff 只有 3 处，与漂移报告逐项对应：`skill
 
 ## 未验收项
 
-- Web 端与本机 Desktop 之外的宿主（其他 DSH 版本、其他操作系统、其他安装方式）：未验收。
+- 初次发布的验收范围为上述 Windows Desktop 配置。后续瘦身包的 Web 和 Desktop 结果见下表。
 - 多用户/共享设备场景：插件按单用户本地环境设计，未做共享设备验收。
+
+## 2026-11-27 瘦身包复核（PR #3）
+
+在 Windows 上对提交 `b3f7973` 执行 `npm pack`。压缩包为 241,269 字节，SHA-256 为 `62de369781f936a3950f16b52bed3012d470a61cb24fe22063a7c66058862262`。解包后 80 个文件共 721,646 字节。DSH Web 和 Desktop 均为 `0.2.2-rc.5`，模型为 `DeepSeek-V4.1-Flash`。两个已有的隔离 Profile 均链接到同一份解包目录，启动宿主前已核对安装路径和 80 个文件。这次复核覆盖本地链接安装和升级后的加载。
+
+| 宿主 | 预设 | 对话轮数 | 宿主显示的步骤数 |
+| --- | --- | ---: | ---: |
+| Web | Standard | 2 | 6 |
+| Web | 长征机/逻辑 | 2 | 8 |
+| Windows Desktop | Standard | 2 | 5 |
+| Windows Desktop | 长征机/逻辑 | 2 | 9 |
+
+四个独立会话均在首轮正确引用 `references/STYLE.md` 的“幽默方式”一行，在第二轮复述临时代号“青铜松果”并从 `research/ANALYSIS_MODELS.md` 返回首个二级标题“回答工作流”。本地原始观测位于 `output/LOJI-PR3-20261127/{web,desktop}-slim-{standard,loji}-turn{1,2}.txt`。

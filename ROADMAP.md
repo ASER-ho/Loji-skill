@@ -5,6 +5,10 @@ written to be readable without access to any maintainer-only workspace.
 
 ## Current release: v1.1.4
 
+> Unreleased packaging, CI and contributor tooling are tracked in `CHANGELOG.md`.
+> For the released adapter and its Windows Desktop acceptance, see
+> [loji-dsh 1.0.0](docs/DESKTOP_ACCEPTANCE.md).
+
 **Theme:** Memory & Reasoning Enhancements
 
 **Status:** RELEASED / v1.1.4.

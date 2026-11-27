@@ -1,6 +1,11 @@
 # Changelog
 
-## 未发布 — Skill 减负与记忆可靠性（loji-dsh 1.0.0 真机验收）
+## Unreleased
+
+- 精简 DSH 安装包，保留技能、研究资料及运行脚本。打包检查同时验证安装体积、预设、资源和诊断入口。
+- CI 覆盖 Ubuntu（Python 3.11、3.12）和 Windows（Python 3.12），并增加发布文档一致性检查与贡献、报障模板。
+
+## loji-dsh 1.0.0 — Skill 减负与记忆可靠性
 
 - 技能入口减负：`SKILL.md` 由 498 行 / 8,941 汉字压缩到 238 行 / 3,597 汉字，九条人格锚点、地球online 四结果表、四形态模板、情感边界三行与近名技能让位条款全部保留；示例与指南迁至 `references/`，运行时规则折叠为有界核心。触发描述（`trigger_queries.json` 11 正 13 负）与 `validate_repo.py:519` 断言子串未改。
 - 预算门禁：新增 `scripts/skill_budget.py`（行数 238 / 汉字 3,597 / 最长非列表段 118 字符），上限由 500 收到 250，CI 第一步即执行；`docs/SKILL_CONTEXT_CONTRACT.md` 记录体积合同。

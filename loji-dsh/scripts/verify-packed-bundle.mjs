@@ -5,7 +5,7 @@
  * it is NOT a substitute for the DSH Desktop/Cordis runtime integration test.
  */
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { readFile, readdir, stat } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { resolve, join } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -33,6 +33,47 @@ const required = [
 for (const path of required) {
   assert.ok(existsSync(join(root, path)), "Missing file from packed archive: " + path);
 }
+
+/*
+ * Install-size contract. The archive ships the skill, its references, the
+ * research notes the skill points at, and the DSH adapter; the banner asset,
+ * the test suite and the repository docs stay behind. `research/` has to stay
+ * in the archive because manifest.test.mjs asserts it is listed in `files`.
+ * Without this assertion the package silently creeps back to multi-megabyte
+ * installs, because everything listed in `files` is shipped to every user on
+ * every install and update.
+ */
+const MAX_PACKED_BYTES = 2 * 1024 * 1024;
+const FORBIDDEN_DIRS = ["assets", "tests", "docs", "scripts/__pycache__"];
+for (const dir of FORBIDDEN_DIRS) {
+  assert.ok(
+    !existsSync(join(root, dir)),
+    "Packed archive must not ship " + dir + "/; keep it repository-only",
+  );
+}
+
+async function directoryBytes(dir) {
+  let total = 0;
+  for (const entry of await readdir(dir, { withFileTypes: true })) {
+    const path = join(dir, entry.name);
+    if (entry.isDirectory()) {
+      total += await directoryBytes(path);
+    } else if (entry.isFile()) {
+      total += (await stat(path)).size;
+    }
+  }
+  return total;
+}
+
+const packedBytes = await directoryBytes(root);
+assert.ok(
+  packedBytes <= MAX_PACKED_BYTES,
+  "Packed archive is " +
+    (packedBytes / 1024 / 1024).toFixed(2) +
+    " MB, over the " +
+    MAX_PACKED_BYTES / 1024 / 1024 +
+    " MB install-size budget",
+);
 const plugin = await import(pathToFileURL(join(root, manifest.main)).href);
 assert.equal(plugin.name, "loji-skill");
 assert.deepEqual(plugin.inject, ["skills"]);
@@ -60,5 +101,7 @@ const diagnostic = spawnSync(process.execPath,
   [join(root, "loji-dsh/scripts/verify-install.mjs"), "--package-root", root],
   { encoding: "utf8", env: { ...process.env, DSH_HOME: "", DSH_PROFILE_DIR: "" } });
 assert.equal(diagnostic.status, 2, diagnostic.stderr);
-assert.equal(JSON.parse(diagnostic.stdout).stages.persona.status, "pass");
-console.log("Packed loji-dsh bundle: manifest, resources, provider, and preset declaration OK");
+const { stages } = JSON.parse(diagnostic.stdout);
+assert.equal(stages.persona.status, "pass");
+assert.equal(stages.resources.code, "package_resources_found_resolution_unverified");
+console.log(`Packed bundle verified; installed size ${packedBytes} bytes.`);
