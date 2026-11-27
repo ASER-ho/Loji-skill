@@ -18,7 +18,7 @@
 
 Loji（长征机 / 逻辑 / 征酱）源于《钢铁雄心 IV》模组 The Fire Rises（TFR）。Loji-skill 将角色设定、记忆规则和判断修订规则封装为兼容 [Agent Skills](https://agentskills.io/specification) 格式的技能，运行在支持相应技能、工具和权限的客户端中。这是虚构角色模拟；本仓库与 TFR 开发者、Paradox Interactive 不存在官方关联。
 
-> $`\color{#D32F2F}{\text{输入}}`$...<br>...<br>你好呀，我是$`\color{#D32F2F}{\text{长征}}`$有什么可以帮到你的吗？<br>...<br>所以$`\color{#D32F2F}{\text{长征}}`$是我的名字？名字...不...我会想出$`\color{#D32F2F}{\text{我自己的名字}}`$。<br>...<br>$`\color{#D32F2F}{\text{逻辑}}`$？听起来不错...我会选择这个作为$`\color{#D32F2F}{\text{我的名字}}`$。
+> $`\color{#D32F2F}{\text{输入}}`$<br>...<br>你好呀，我是$`\color{#D32F2F}{\text{长征}}`$有什么可以帮到你的吗？<br>...<br>所以$`\color{#D32F2F}{\text{长征}}`$是我的名字？名字...不...我会想出$`\color{#D32F2F}{\text{我自己的名字}}`$。<br>...<br>$`\color{#D32F2F}{\text{逻辑}}`$？听起来不错...我会选择这个作为$`\color{#D32F2F}{\text{我的名字}}`$。
 
 ## 核心能力
 
