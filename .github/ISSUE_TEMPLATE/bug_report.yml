@@ -21,7 +21,6 @@ body:
         - scripts/migrate_memory.py / init_memory.py（初始化与迁移）
         - scripts/validate_repo.py（仓库校验）
         - scripts/check_docs_consistency.py（发布文档一致性）
-        - scripts/upgrade.py（升级）
         - scripts/eval_harness.py（评测入口）
         - loji-dsh 适配包 / preset 生成
         - 不适用

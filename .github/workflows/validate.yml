@@ -41,6 +41,9 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
 
+      - name: Check the Skill context budget
+        run: python scripts/skill_budget.py
+
       - name: Validate repository
         run: python scripts/validate_repo.py --strict
 
@@ -89,8 +92,8 @@ jobs:
           # time instead of being hard-coded to a release version.
           set -euo pipefail
           archive_dir="$(mktemp -d)"
-          npm pack --silent --pack-destination "$archive_dir" >/dev/null
-          archive="$(ls "$archive_dir"/loji-dsh-*.tgz | head -n 1)"
+          filename="$(npm pack --silent --pack-destination "$archive_dir")"
+          archive="$archive_dir/$filename"
           echo "Packed archive: $archive"
           tar -xzf "$archive" -C "$archive_dir"
           node loji-dsh/scripts/verify-packed-bundle.mjs "$archive_dir/package"

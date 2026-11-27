@@ -5,10 +5,9 @@ written to be readable without access to any maintainer-only workspace.
 
 ## Current release: v1.1.4
 
-> **Unreleased work on `master`:** the `loji-dsh` agent preset
-> (`feat(loji-dsh): add 长征机/逻辑 agent preset (#2)`) and the engineering
-> hardening batch are recorded under `## Unreleased` in `CHANGELOG.md`. They are
-> not part of v1.1.4 and have not completed real desktop acceptance.
+> Unreleased packaging, CI and contributor tooling are tracked in `CHANGELOG.md`.
+> For the released adapter and its Windows Desktop acceptance, see
+> [loji-dsh 1.0.0](docs/DESKTOP_ACCEPTANCE.md).
 
 **Theme:** Memory & Reasoning Enhancements
 

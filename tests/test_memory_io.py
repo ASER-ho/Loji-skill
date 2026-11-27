@@ -288,56 +288,47 @@ class MemoryIOTests(unittest.TestCase):
         self.assertEqual(memory_io.read_text(r1.backup_path), "V0\n")
         self.assertEqual(memory_io.read_text(r2.backup_path), "V1\n")
 
+    def _interrupted_rewrite(self):
+        self._write_initial("V0\n")
+        old_version = memory_io.read_version(self.target)
+        actual_read = memory_io.read_version
+
+        def fail_read(path):
+            if path.read_bytes() == b"V1\n":
+                raise OSError("synthetic interrupted verification")
+            return actual_read(path)
+
+        with mock.patch.object(memory_io, "read_version", side_effect=fail_read):
+            with self.assertRaises(memory_io.MemoryPostWriteVerificationError) as failed:
+                memory_io.atomic_write(self.target, "V1\n", old_version,
+                                       allow_lossless_recovery=True)
+        return old_version, failed.exception.restore_point
+
     def test_guarded_restore(self) -> None:
-        v0 = self._write_initial("V0\n")
-        result = memory_io.atomic_write(self.target, "V1\n", v0)
-        v1 = memory_io.read_version(self.target)
-        restored = memory_io.restore_backup(
-            result.backup_path,
-            self.target,
-            expected_target_sha256=v1.sha256,
-            expected_backup_sha256=v0.sha256,
-        )
+        v0, point = self._interrupted_rewrite()
+        restored = memory_io.restore_backup(point)
         self.assertEqual(restored.sha256, v0.sha256)
         self.assertEqual(memory_io.read_text(self.target), "V0\n")
 
     def test_guarded_restore_refuses_changed_target(self) -> None:
-        v0 = self._write_initial("V0\n")
-        result = memory_io.atomic_write(self.target, "V1\n", v0)
+        _, point = self._interrupted_rewrite()
         self.target.write_text("EXTERNAL\n", encoding="utf-8", newline="")
         with self.assertRaises(memory_io.MemoryConflictError):
-            memory_io.restore_backup(
-                result.backup_path,
-                self.target,
-                expected_target_sha256=v0.sha256,
-                expected_backup_sha256=v0.sha256,
-            )
+            memory_io.restore_backup(point)
         self.assertEqual(memory_io.read_text(self.target), "EXTERNAL\n")
 
     def test_guarded_restore_rejects_wrong_backup_hash(self) -> None:
-        v0 = self._write_initial("V0\n")
-        result = memory_io.atomic_write(self.target, "V1\n", v0)
-        v1 = memory_io.read_version(self.target)
+        _, point = self._interrupted_rewrite()
+        point.backup.write_bytes(b"ALTERED")
         with self.assertRaises(memory_io.MemoryConflictError):
-            memory_io.restore_backup(
-                result.backup_path,
-                self.target,
-                expected_target_sha256=v1.sha256,
-                expected_backup_sha256="0" * 64,
-            )
+            memory_io.restore_backup(point)
         self.assertEqual(memory_io.read_text(self.target), "V1\n")
 
-    def test_guarded_restore_requires_backup_hash(self) -> None:
+    def test_guarded_restore_requires_recovery_receipt(self) -> None:
         v0 = self._write_initial("V0\n")
         result = memory_io.atomic_write(self.target, "V1\n", v0)
-        v1 = memory_io.read_version(self.target)
         with self.assertRaises(memory_io.MemoryVersionRequiredError):
-            memory_io.restore_backup(
-                result.backup_path,
-                self.target,
-                expected_target_sha256=v1.sha256,
-                expected_backup_sha256=None,
-            )
+            memory_io.restore_backup(result.backup_path)
         self.assertEqual(memory_io.read_text(self.target), "V1\n")
 
     def test_init_creates_and_refuses_existing(self) -> None:

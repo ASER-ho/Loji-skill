@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import sys
+from contextlib import nullcontext
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -35,26 +36,22 @@ def authorize(policy, consent, *, write=False, requested=False):
 
 
 def update(path, payload, snapshot):
-    """Use the published Memory IO transaction and its guarded recovery."""
+    """Recover only an interrupted schema-only rewrite, tied to its receipt."""
+    original = memory_schema.parse(snapshot.text)
+    if original.version != 1 or memory_schema.upgrade(original) != payload:
+        raise memory_schema.FormatError("automatic recovery is limited to a lossless migration")
     try:
-        return memory_io.atomic_write(path, payload, snapshot.version)
+        return memory_io.atomic_write(path, payload, snapshot.version, allow_lossless_recovery=True)
     except memory_io.MemoryPostWriteVerificationError as failure:
         if not failure.recovery_required:
             raise
-        if (failure.published_version is None or failure.backup_path is None or
-                failure.published_identity is None or not failure.published_identity[1]):
+        if failure.restore_point is None:
             raise memory_io.MemoryWriteError(
-                f"verification failed; manual recovery required; backup={failure.backup_path}"
+                f"verification failed; recovery refused without a matching receipt; manual recovery required; backup={failure.backup_path}"
             ) from failure
         try:
-            memory_io.restore_backup(
-                failure.backup_path, path,
-                expected_target_sha256=failure.intended_sha256,
-                expected_target_version=failure.published_version,
-                expected_target_identity=failure.published_identity,
-                expected_backup_sha256=snapshot.version.sha256,
-            )
-        except (OSError, memory_io.MemoryIOError) as recovery:
+            memory_io.restore_backup(failure.restore_point)
+        except (OSError, ValueError, memory_io.MemoryIOError) as recovery:
             raise memory_io.MemoryWriteError(
                 f"verification failed; recovery refused or failed ({recovery}); "
                 f"backup={failure.backup_path}"
@@ -74,9 +71,7 @@ def migrate(
         raise AccessError("migration requires specific user authorization in every mode")
     if in_place == (target is not None):
         raise ValueError("choose exactly one of in-place migration or a separate target")
-    source = Path(source)
-    if source.is_symlink():
-        raise ValueError("source must not be a symbolic link")
+    source = memory_io.guard.managed_path(source)
     target = source if in_place else Path(target)
     if not in_place and (
         source.resolve() == target.resolve() or target.exists() or target.is_symlink()
@@ -97,6 +92,7 @@ def migrate(
         if memory_io.read_version(source) != snapshot.version:
             raise memory_io.MemoryConflictError("source changed before publication")
 
+    target = memory_io.guard.managed_path(target)
     with memory_io.exclusive_lock(source):
         confirm_source()
         memory_io.publish_new(target, payload.encode("utf-8"), before_publish=confirm_source)
@@ -116,11 +112,31 @@ def main(argv=None):
                         help="assert explicit user authorization for this exact migration")
     args = parser.parse_args(argv)
     try:
-        result = migrate(
-            args.source, policy=args.policy, consent=args.consent, target=args.target,
-            in_place=args.in_place, dry_run=args.dry_run,
-            migration_authorized=args.authorize_migration,
-        )
+        # This standalone entry remains for explicitly named legacy files.
+        # A managed installation must use the host's shared authorization lock.
+        if __package__:
+            from .memory_state import STATE_NAME
+        else:
+            from memory_state import STATE_NAME
+        parent = Path(args.source).absolute().parent
+        authorize(args.policy, args.consent, write=not args.dry_run,
+                  requested=args.authorize_migration)
+        if not args.dry_run and not args.authorize_migration:
+            raise AccessError("migration requires specific user authorization")
+        transaction = (nullcontext() if args.dry_run else
+                       memory_io.exclusive_lock(parent / (STATE_NAME + ".transaction")))
+        with transaction:
+            try:
+                (parent / STATE_NAME).lstat()
+            except FileNotFoundError:
+                pass
+            else:
+                raise AccessError("configured installation requires memory_state.py migrate")
+            result = migrate(
+                args.source, policy=args.policy, consent=args.consent, target=args.target,
+                in_place=args.in_place, dry_run=args.dry_run,
+                migration_authorized=args.authorize_migration,
+            )
     except (OSError, ValueError, memory_io.MemoryIOError) as exc:
         print(f"migration failed: {exc}", file=sys.stderr)
         return 1

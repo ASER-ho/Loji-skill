@@ -18,10 +18,10 @@ assert preset["id"]=="preset-loji" and preset["name"]=="@deepseek-ai/dsh-agent-p
 config=preset["config"]
 assert config["id"]=="loji" and config["name"]=="长征机/逻辑" and config["order"]==2
 plugins=config["plugins"]
-assert len(plugins)==22, f"expected 22 top-level plugins from pinned DSH 0.2.2-rc.1: {len(plugins)}"
+assert len(plugins)==23, f"expected 23 top-level plugins from pinned DSH 0.2.2-rc.5: {len(plugins)}"
 assert len({p["id"] for p in plugins})==len(plugins)
 assert plugins[0]["id"]=="persona" and plugins[0]["name"]=="@deepseek-ai/dsh-persona"
 source=(ROOT/"SKILL.md").read_text(encoding="utf-8")
 expected="你正在使用「长征机/逻辑」角色模式（Loji，亦称征酱）。角色设定是虚构模拟，不是真实自主意识。严守宿主安全规则和用户的实际权限；不声称已执行未执行的操作。\n\n"+source[source.index("## 角色身份"):source.index("### 三、心智模型")].rstrip()
 assert plugins[0]["config"]["prefix"]==expected, "persona must match canonical skill"
-print("DSH preset validation OK: provider + preset, 22 plugins, persona matches source")
+print("DSH preset validation OK: provider + preset, 23 plugins, persona matches source")

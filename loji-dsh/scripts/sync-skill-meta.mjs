@@ -25,10 +25,7 @@ const dest = join(root, "loji-dsh", "lib", "skill-meta.json");
 const meta = JSON.parse(readFileSync(dest, "utf8"));
 if (!meta.description || !meta.description.includes("长征机")) throw new Error("invalid curated description");
 const next = JSON.stringify({name,version,description:meta.description},null,2) + "\n";
-// Compare modulo line endings: a Windows checkout with core.autocrlf=true would
-// otherwise report stale metadata for a file that only differs by CRLF.
-const sameText = (a, b) => a.replace(/\r\n/g, "\n") === b.replace(/\r\n/g, "\n");
 if (process.argv.includes("--check")) {
-  if (!sameText(readFileSync(dest,"utf8"), next)) { console.error("Stale metadata; run npm run sync:meta"); process.exitCode=1; }
+  if (readFileSync(dest,"utf8").replace(/\r\n/g, "\n") !== next) { console.error("Stale metadata; run npm run sync:meta"); process.exitCode=1; }
   else console.log("DSH skill metadata in sync");
 } else { writeFileSync(dest,next); console.log("Updated",name,version); }

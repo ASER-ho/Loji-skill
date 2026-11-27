@@ -1,13 +1,20 @@
 # Changelog
 
-## Unreleased — DSH Agent Preset 与工程加固
+## Unreleased
 
-- `feat(loji-dsh): add 长征机/逻辑 agent preset (#2)`：新增 preset `loji`（显示名「长征机/逻辑」）与 `loji-dsh/presets/upstream/standard-0.2.2-rc.1.patch.yml`；`cordis.patch.yml` 同时声明宿主 `loji-skill` provider 与 `preset-loji`，由 `loji-dsh/scripts/gen-preset-patch.mjs` 从固定上游快照确定性重建。技能内容与版本号不变。
-- 包体积契约：`package.json` 的 `files` 不再包含 `assets/`、`tests/`、`research/`、`docs/`，安装体积由约 6.1 MB 降至约 0.7 MB；`verify-packed-bundle.mjs` 增加 2 MB 上限断言与禁止目录断言，防止体积回涨。
-- CI 加固：新增 `scripts/check_docs_consistency.py`，交叉校验 `SKILL.md`、`loji-dsh/lib/skill-meta.json`、`loji-dsh/README.md`、`ROADMAP.md`、`CHANGELOG.md`、`package.json` 的版本一致性；npm 归档名改为运行时解析，不再硬编码 `loji-dsh-1.0.0.tgz`；新增 Windows 与 Python 3.11 矩阵、`permissions: contents: read`、`concurrency`、`timeout-minutes`。
-- `skills-ref` 校验进入 CI：可安装时执行 `skills-ref validate .`，不可安装时显式记录 `ENV-BLOCKED`，本地的 `validate_repo.py` 结果不计作 `skills-ref` PASS。
-- 仓库治理：新增 `SECURITY.md`、`CONTRIBUTING.md`、结构化缺陷模板（按 `research/PERSONA_FAILURE_MODES.md` 的十类故障分诊）与 `scripts/upgrade.py`（备份记忆与判断账本后升级，失败可回滚）。
-- 未完成项：真实 Windows / DSH Desktop 的安装与对话验收尚未执行，不宣称该项通过。
+- 精简 DSH 安装包，保留技能、研究资料及运行脚本。打包检查同时验证安装体积、预设、资源和诊断入口。
+- CI 覆盖 Ubuntu（Python 3.11、3.12）和 Windows（Python 3.12），并增加发布文档一致性检查与贡献、报障模板。
+
+## loji-dsh 1.0.0 — Skill 减负与记忆可靠性
+
+- 技能入口减负：`SKILL.md` 由 498 行 / 8,941 汉字压缩到 238 行 / 3,597 汉字，九条人格锚点、地球online 四结果表、四形态模板、情感边界三行与近名技能让位条款全部保留；示例与指南迁至 `references/`，运行时规则折叠为有界核心。触发描述（`trigger_queries.json` 11 正 13 负）与 `validate_repo.py:519` 断言子串未改。
+- 预算门禁：新增 `scripts/skill_budget.py`（行数 238 / 汉字 3,597 / 最长非列表段 118 字符），上限由 500 收到 250，CI 第一步即执行；`docs/SKILL_CONTEXT_CONTRACT.md` 记录体积合同。
+- 记忆可靠性：`scripts/recovery_context.py` 增加有字节上限的上下文恢复、`scripts/evidence_identity.py` 做证据回查与文件指纹、`scripts/safe_state_write.py` 提供原子写入与并发冲突检测，并补充崩溃恢复、旧备份不得复活已遗忘内容的回归。
+- 宿主快照信任：`fix(memory): reject stale host snapshots on configuration and mutation`——配置与写入前校验宿主快照新鲜度。
+- DSH 诊断：`loji-dsh/lib/diagnostics.js` 增加只读安装检查、Profile 识别与版本漂移报告；同版本升级即使返回成功，宿主仍可能加载旧目录，因此改为以 `packageDigest` + `profile.fingerprint` 判定实际加载物。
+- 固定快照迁移：`SNAPSHOT_VERSION` 与 `loji-dsh/presets/upstream/standard-0.2.2-rc.5.patch.yml` 对齐宿主 `0.2.2-rc.5`（官方 commit `9c2670d3bce5275e0d1610272958121af87787bb`，23 个插件），`cordis.patch.yml` 重新生成；`verify-install` 的 `drift` 由 `unknown` 变为 `matched`，`overall` 由 `unknown`（退出码 2）变为 `supported`（退出码 0）。
+- 验证：341 项 Python 回归、16 项 DSH 测试、`gen-preset-patch.mjs --check`、`skill_budget.py`、`npm pack` 打包校验全部通过。本机 DSH Desktop（`0.2.2-rc.5`，Electron 44.7.0）完成 Standard 与「长征机/逻辑」两模式各 2 轮真实多轮对话验收，完成升级与回滚、bundle 缺失冲突演练，并在隔离目录完成记忆写盘与跨会话恢复验收（12 项真机用例 + 真实对话写入 + 新会话读回），证据见 [Desktop 验收](docs/DESKTOP_ACCEPTANCE.md)。
+- 发布：本条目随 `master` 合并与 `loji-dsh-v1.0.0` 发布标记一并对外。
 
 ## v1.1.4（正式版本）— Memory & Reasoning Enhancements
 

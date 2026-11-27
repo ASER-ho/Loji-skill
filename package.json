@@ -17,7 +17,7 @@
     "references",
     "research",
     "examples",
-    "scripts",
+    "scripts/*.py",
     "memory.template.md",
     "judgments.template.md",
     "README.md",
@@ -48,6 +48,7 @@
     "check:meta": "node loji-dsh/scripts/sync-skill-meta.mjs --check",
     "test": "node --test loji-dsh/tests/*.test.mjs",
     "gen:preset": "node loji-dsh/scripts/gen-preset-patch.mjs",
-    "check:preset": "node loji-dsh/scripts/gen-preset-patch.mjs --check"
+    "check:preset": "node loji-dsh/scripts/gen-preset-patch.mjs --check",
+    "verify:install": "node loji-dsh/scripts/verify-install.mjs"
   }
 }

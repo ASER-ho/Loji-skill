@@ -63,6 +63,18 @@ Loji 的核心是**角色与分析**，不依赖任何特定环境能力。面�
 
 具体实现见 `scripts/memory_io.py`。
 
+### 宿主提交前的版本核对
+
+若选择基于之前显示的状态，宿主将 status 返回的 state_digest 原样传给 set/reset 的 --expected-digest。预期首次创建可传 absent。对正文执行 mutate 时可传上次授权读取的正文 SHA-256。版本冲突时重新读取并确认本次更改。
+
+### 崩溃诊断与回退
+
+状态、记忆和判断更新按相同规则处理。读出的 SHA-256、文件标识和版本信息用于检测更新冲突。锁内重新核对授权和材料版本，临时文件与目标同目录，写入和校验完成后才原子提交。拒绝软链接、Windows Junction 与硬链接路径。
+
+维护者可用 `scripts/safe_state_write.py --memory-dir <已授权绝对目录> --target memory.md` 查看本目标的残留。经当前用户和宿主授权才附加 `--cleanup`。仅在取得原有内核锁、记录的进程确定已退出且超过冷却时间时清理其残留。内核锁文件本身保留，避免两个进程锁到不同文件。未知来源的残留留待人工处理。
+
+回退插件和配置时保留用户当前数据。普通正文更新（包括遗忘）没有自动正文恢复凭证。无损 schema 迁移失败可使用当次进程持有的恢复凭证，恢复前核对目标的最新指纹、标识与版本及备份哈希。发现任何后续保存则停止恢复。备份仍是私有文件，按授权单独管理，禁止用备份重建被忘记的内容。
+
 ## 5. 记忆授权模型
 
 `memory_policy` 决定记忆写入行为：
@@ -115,7 +127,7 @@ memory_policy 仅 auto/explicit/read_only/off；confirmed 必须为布尔值。�
 
 **每次操作与并发**：状态入口在 memory.state.json.transaction.lock 内重新读取状态、判定权限，并持锁完成整个正文操作；配置同样先取该锁，再调用既有 memory_io 的 state 文件锁、版本核对、备份、同目录临时写入、原子发布/替换与回读验证。锁顺序固定为状态事务 → 状态文件/正文既有事务；不在 access 内调用 set/reset 或嵌套 access。先完成的正文事务可早于等待中的切换；切换成功后新的操作不能沿用旧授权。同一已授权操作事务内已取得并核对的结果可以复用，不为同一目的重复读取；但不得跨操作缓存授权，也不得在锁外先读正文“检查”。协作锁不阻止绕过它的外部程序，不能宣称 OS 沙箱或恶意路径替换防护。状态文件、transaction.lock、.lock、.bak.*、.*.tmp 全部不提交；不可自动恢复备份为授权。
 
-**实际接口**：`scripts/memory_state.py` 提供 status/set/reset/read-memory/judgments/context/mutate。CLI 每次由可信宿主传入固定 `--memory-dir`；`--accept-saved --state-read --state-write --body-read --body-write` 仅表示宿主能力，不选择挡位。set 的 `--policy` 必须对应本轮用户明确选择并带 `--user-confirmed`，reset 须 `--user-requested`。status 返回 saved、实际可读/可写及 needs_setup；错误退出 2。context 保留 domain/as-of/matters 原语义；mutate 使用原有 Episode 操作、资格/隐私检查及 `--user-requested`。正文初始化、Judgment 写入或其他旧 API 必须在 Python `with state.access(write=..., user_requested=...) as auth:` 中调用，并用 auth.body_args()，不能缓存授权、直接绕过状态入口或把有效值注入下一会话。禁止在锁外先读正文“检查”。
+**实际接口**：`scripts/memory_state.py` 提供 status/set/reset/read-memory/judgments/context/mutate/migrate。CLI 每次由可信宿主传入固定 `--memory-dir`；`--accept-saved --state-read --state-write --body-read --body-write` 仅表示宿主能力，不选择挡位。set 的 `--policy` 必须对应本轮用户明确选择并带 `--user-confirmed`，reset 须 `--user-requested`。status 返回 saved、实际可读/可写及 needs_setup；错误退出 2。context 保留 domain/as-of/matters 原语义；mutate 使用原有 Episode 操作、资格/隐私检查及 `--user-requested`。正文初始化、Judgment 写入或其他旧 API 必须在 Python `with state.access(write=..., user_requested=...) as auth:` 中调用，并用 auth.body_args()，不能缓存授权、直接绕过状态入口或把有效值注入下一会话。禁止在锁外先读正文“检查”。
 
 普通 Codex 的一次性目录确认、恢复许可和宿主认可 AGENTS.md 配置流程见 `CODEX_SETUP.md`。该工作流由 Agent 在后续会话自行调用入口，用户不必每次运行 CLI。纯 Skill 不会自动安装宿主配置或更改工具权限。支持范围由实际宿主测试确定；仅提供文件与 Markdown 不等于所有客户端均能自动恢复。
 

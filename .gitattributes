@@ -1,10 +1,4 @@
-# Normalise line endings on every platform.
-#
-# `npm run check:meta` compares loji-dsh/lib/skill-meta.json byte for byte
-# against a value generated with "\n" endings, and the Python tools read the
-# same files as text. A Windows checkout with core.autocrlf=true rewrites them
-# to CRLF and the metadata check then reports "Stale metadata" for a tree that
-# is perfectly in sync, so the checkout line ending is pinned here instead.
+# Keep text fixtures and generated metadata consistent across platforms.
 * text=auto eol=lf
 
 # Binary assets must never be touched by the conversion above.

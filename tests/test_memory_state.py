@@ -84,6 +84,14 @@ class MemoryStateTests(unittest.TestCase):
                 self.assertTrue(self.state.status()["needs_setup"])
                 self.deny_all_body()
 
+    def test_duplicate_state_field_keeps_its_own_diagnostic(self):
+        with self.assertRaises(ms.StateError) as caught:
+            ms.parse(b'{"memory_policy":"off","memory_policy":"auto","confirmed":true}')
+        self.assertIn("duplicate state field", str(caught.exception))
+        with self.assertRaises(ms.StateError) as caught:
+            ms.parse(b'{"memory_policy":"off",')
+        self.assertIn("invalid state JSON", str(caught.exception))
+
     def test_unconfirmed_never_authorizes(self):
         self.state.path.write_text('{"memory_policy":"auto","confirmed":false}', encoding="utf-8")
         self.deny_all_body()
