@@ -62,7 +62,8 @@ jobs:
           # installed this step reports ENV-BLOCKED; the local structural
           # checks above are explicitly not counted as a skills-ref PASS.
           if python -m pip install --quiet "git+https://github.com/agentskills/agentskills.git@83021e2be457a9b6679148719c1f6074f0ad975e#subdirectory=skills-ref" && command -v skills-ref >/dev/null 2>&1; then
-            skills-ref validate .
+            # Pass a named directory; the validator treats "." as an empty basename.
+            skills-ref validate "$PWD"
             echo "skills-ref: PASS"
           else
             echo "::warning title=ENV-BLOCKED::skills-ref unavailable; not counted as skills-ref PASS"

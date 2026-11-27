@@ -30,7 +30,7 @@ npm run check:preset
 若本机装了官方校验器，再跑一次：
 
 ```bash
-skills-ref validate .
+skills-ref validate "$PWD"
 ```
 
 `skills-ref` 不可用时，在 PR 里写 `ENV-BLOCKED`。**不要**用 `validate_repo.py` 通过去冒充 `skills-ref` PASS——这两者不是一回事，README 和 ROADMAP 对这一点有明确措辞。
