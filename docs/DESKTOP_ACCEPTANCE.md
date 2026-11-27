@@ -102,3 +102,16 @@ rc.1 → rc.5 的真实 diff 只有 3 处，与漂移报告逐项对应：`skill
 | Windows Desktop | 长征机/逻辑 | 2 | 9 |
 
 四个独立会话均在首轮正确引用 `references/STYLE.md` 的“幽默方式”一行，在第二轮复述临时代号“青铜松果”并从 `research/ANALYSIS_MODELS.md` 返回首个二级标题“回答工作流”。本地原始观测位于 `output/LOJI-PR3-20261127/{web,desktop}-slim-{standard,loji}-turn{1,2}.txt`。
+
+## loji-dsh 1.0.1 首次安装
+
+2026-11-27，Windows 本机复用 DSH Web 和 Desktop 0.2.2-rc.5 宿主程序，两端分别从空的 DSH_HOME、独立的 Agents 目录开始。Desktop 首次启动生成的 Profile 只含基础插件，退出应用后用该 Desktop 自带的 CLI 安装。Web 用其 CLI 创建新 Profile 并安装。两端均直接安装同一份发布归档，随后启动宿主。
+
+| 检查 | Web | Windows Desktop |
+| --- | --- | --- |
+| Profile 登记适配包 | loji-dsh 1.0.1 | loji-dsh 1.0.1 |
+| 插件列表 | 已启用 | 已启用 |
+| 新会话选择「长征机/逻辑」 | 成功 | 成功 |
+| 安装内容与发布归档逐文件 SHA-256 核对 | 80/80 一致 | 80/80 一致 |
+
+发布文件 `loji-dsh-1.0.1.tgz` 共 241,396 字节，解包后 721,935 字节，SHA-256 为 `b35360aa191360714ba3048c3703794b6b90d1e8e257a21abda961165398128a`。本轮验收覆盖无既有配置时的首次安装、自动登记、启用及预设选择。前一节的四组真实模型对话使用 PR #3 产物；逐文件比对确认本版的技能正文、人格预设、提供者实现、记忆恢复逻辑与引用资源均与该产物一致。

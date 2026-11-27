@@ -5,9 +5,8 @@ written to be readable without access to any maintainer-only workspace.
 
 ## Current release: v1.1.4
 
-> Unreleased packaging, CI and contributor tooling are tracked in `CHANGELOG.md`.
-> For the released adapter and its Windows Desktop acceptance, see
-> [loji-dsh 1.0.0](docs/DESKTOP_ACCEPTANCE.md).
+> The loji-dsh 1.0.1 packaging and CI changes are recorded in [CHANGELOG.md](CHANGELOG.md).
+> See the [DSH host acceptance record](docs/DESKTOP_ACCEPTANCE.md) for tested configurations.
 
 **Theme:** Memory & Reasoning Enhancements
 

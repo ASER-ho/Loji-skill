@@ -16,7 +16,7 @@ if (!rootArg) throw new Error("Pass extracted npm package directory");
 const root = resolve(rootArg);
 const manifest = JSON.parse(await readFile(join(root, "package.json"), "utf8"));
 assert.equal(manifest.name, "loji-dsh");
-assert.equal(manifest.version, "1.0.0");
+assert.equal(manifest.version, "1.0.1");
 assert.equal(manifest.main, "loji-dsh/lib/index.js");
 assert.equal(manifest.dsh?.bundle?.patch, "./loji-dsh/cordis.patch.yml");
 const required = [

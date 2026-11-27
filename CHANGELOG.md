@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v1.1.4（技能） / loji-dsh 1.0.1（适配包）
 
 - 精简 DSH 安装包，保留技能、研究资料及运行脚本。打包检查同时验证安装体积、预设、资源和诊断入口。
 - CI 覆盖 Ubuntu（Python 3.11、3.12）和 Windows（Python 3.12），并增加发布文档一致性检查与贡献、报障模板。
@@ -8,7 +8,7 @@
 ## loji-dsh 1.0.0 — Skill 减负与记忆可靠性
 
 - 技能入口减负：`SKILL.md` 由 498 行 / 8,941 汉字压缩到 238 行 / 3,597 汉字，九条人格锚点、地球online 四结果表、四形态模板、情感边界三行与近名技能让位条款全部保留；示例与指南迁至 `references/`，运行时规则折叠为有界核心。触发描述（`trigger_queries.json` 11 正 13 负）与 `validate_repo.py:519` 断言子串未改。
-- 预算门禁：新增 `scripts/skill_budget.py`（行数 238 / 汉字 3,597 / 最长非列表段 118 字符），上限由 500 收到 250，CI 第一步即执行；`docs/SKILL_CONTEXT_CONTRACT.md` 记录体积合同。
+- 预算门禁：新增 `scripts/skill_budget.py`（行数 238 / 汉字 3,597 / 最长非列表段 118 字符），上限由 500 收到 250，CI 第一步即执行；[预算检查脚本](scripts/skill_budget.py) 定义行数、汉字数及段落长度上限。
 - 记忆可靠性：`scripts/recovery_context.py` 增加有字节上限的上下文恢复、`scripts/evidence_identity.py` 做证据回查与文件指纹、`scripts/safe_state_write.py` 提供原子写入与并发冲突检测，并补充崩溃恢复、旧备份不得复活已遗忘内容的回归。
 - 宿主快照信任：`fix(memory): reject stale host snapshots on configuration and mutation`——配置与写入前校验宿主快照新鲜度。
 - DSH 诊断：`loji-dsh/lib/diagnostics.js` 增加只读安装检查、Profile 识别与版本漂移报告；同版本升级即使返回成功，宿主仍可能加载旧目录，因此改为以 `packageDigest` + `profile.fingerprint` 判定实际加载物。

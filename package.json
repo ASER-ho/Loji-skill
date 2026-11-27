@@ -1,6 +1,6 @@
 {
   "name": "loji-dsh",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "DeepSeek Harness adapter for 长征机 / 逻辑 / 征酱 (Loji); registers the loji-skill Agent Skill.",
   "license": "MIT",
   "author": "ASER-ho",

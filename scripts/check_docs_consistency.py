@@ -15,7 +15,7 @@ It checks:
 4. ``ROADMAP.md`` "Current release" agrees with it.
 5. ``CHANGELOG.md`` opens with that version, or with an explicit
    ``## Unreleased`` section that is then reported as a warning.
-6. ``package.json`` version agrees with the documented "Initial package
+6. ``package.json`` version agrees with the documented "Current package
    version"; package and skill versions stay independent by design.
 
 An unreleased section is allowed while work is in flight, but it must be
@@ -44,7 +44,7 @@ README_SKILL_VERSION = re.compile(
     r"Current bundled skill version\s*\|\s*v?(\d+\.\d+\.\d+)"
 )
 README_PACKAGE_VERSION = re.compile(
-    r"Initial package version\s*\|\s*v?(\d+\.\d+\.\d+)"
+    r"Current package version\s*\|\s*v?(\d+\.\d+\.\d+)"
 )
 
 
@@ -190,12 +190,12 @@ def check_package_version(root: Path, report: Report) -> None:
     matched = README_PACKAGE_VERSION.search(readme)
     if not matched:
         report.error(
-            "loji-dsh/README.md: no 'Initial package version' row to cross-check "
+            "loji-dsh/README.md: no 'Current package version' row to cross-check "
             "package.json"
         )
     elif matched.group(1) != package_version:
         report.error(
-            f"loji-dsh/README.md: initial package version={matched.group(1)!r}, "
+            f"loji-dsh/README.md: current package version={matched.group(1)!r}, "
             f"package.json={package_version!r}"
         )
 
