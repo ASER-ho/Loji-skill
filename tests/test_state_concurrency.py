@@ -30,6 +30,14 @@ class SafeStateTests(unittest.TestCase):
         self.target = self.root / "memory.md"
         self.target.write_bytes(b"old")
 
+    def wait_for_pid_release(self, pid):
+        # On Windows a terminated child can remain visible until its last handle closes.
+        deadline = time.monotonic() + 5
+        while not safe.process_absent(pid):
+            if time.monotonic() >= deadline:
+                self.fail(f"Child PID {pid} still visible after exit")
+            time.sleep(0.05)
+
     def test_abrupt_exit_leaves_original_and_cleans_only_confirmed_stale(self):
         process = subprocess.run([
             sys.executable, "-B", "-c",
@@ -50,6 +58,7 @@ class SafeStateTests(unittest.TestCase):
         nonce = "0123456789abcdef"
         active = self.root / f"memory.md.loji-{os.getpid()}-1-{nonce}.new.tmp"
         active.write_bytes(b"active")
+        self.wait_for_pid_release(before["owner"]["pid"])
         real_time = time.time_ns()
         with patch.object(safe.time, "time_ns", return_value=real_time + 120_000_000_000):
             result = safe.inspect(self.root, self.target.name, cleanup=True)
@@ -76,6 +85,7 @@ class SafeStateTests(unittest.TestCase):
             io.read(target)
         before = safe.inspect(self.root, target.name, cleanup=True)
         self.assertEqual(before["status"], "linked_target")
+        self.wait_for_pid_release(before["owner"]["pid"])
         real_time = time.time_ns()
         with patch.object(safe.time, "time_ns", return_value=real_time + 120_000_000_000):
             repaired = safe.inspect(self.root, target.name, cleanup=True)

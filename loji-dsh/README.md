@@ -5,7 +5,7 @@ This directory contains the DSH-specific integration for the main [Loji-skill](.
 | Identifier | Value |
 | --- | --- |
 | Package name | loji-dsh |
-| Initial package version | 1.0.0 |
+| Current package version | 1.0.1 |
 | Registered skill name | loji-skill |
 | Current bundled skill version | 1.1.4 (from root SKILL.md) |
 | Reserved preset ID | loji |
@@ -15,7 +15,7 @@ The root package.json remains the sole DSH installation manifest; it points into
 
 ## Version policy
 
-The new package name loji-dsh starts at 1.0.0 (the former package dsh-loji was a different package identity). **Pure upstream skill content/version syncs do not change loji-dsh's 1.0.0.** Changes to DSH integration or the loji-dsh package version require maintainer review. Record and compare actual Git commit hashes for content updates: a deliberately fixed package version cannot communicate every revision and may not trigger conventional version-based update detection.
+The new package name loji-dsh starts at 1.0.0 (the former package dsh-loji was a different package identity). **Pure upstream skill content/version syncs do not change the adapter version.** Changes to DSH integration or the loji-dsh package version require maintainer review. Record and compare actual Git commit hashes for content updates: a deliberately fixed package version cannot communicate every revision and may not trigger conventional version-based update detection.
 
 To sync the bundled skill's metadata after a SKILL.md change, from repository root run:
 

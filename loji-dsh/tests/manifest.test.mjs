@@ -9,7 +9,7 @@ const meta=JSON.parse(readFileSync(join(root,"loji-dsh/lib/skill-meta.json"),"ut
 const skill=readFileSync(join(root,"SKILL.md"),"utf8");
 test("package and skill have separate identities and versions",()=>{
   assert.equal(pkg.name,"loji-dsh");
-  assert.equal(pkg.version,"1.0.0");
+  assert.equal(pkg.version,"1.0.1");
   assert.equal(meta.name,"loji-skill");
   assert.ok(meta.description.includes("长征机"));
   assert.match(skill,/^name: loji-skill$/m);

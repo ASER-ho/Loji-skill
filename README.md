@@ -196,7 +196,7 @@ dsh plugin add github:ASER-ho/Loji-skill
 # 等价写法：dsh plugin add https://github.com/ASER-ho/Loji-skill
 ```
 
-新包名 `loji-dsh`、版本 `1.0.0`；技能注册名始终为 `loji-skill`（当前技能版本 `1.1.4`）。插件直接读取根目录 `SKILL.md` 和相关资源，无需另存一份技能。本插件现已声明角色模式 ID `loji`、显示名「长征机/逻辑」，人格源自根目录 `SKILL.md` 的角色身份与行为规则。**已在本机 DSH Desktop（`0.2.2-rc.5`, Electron 44.7.0）完成安装、真实多轮对话、记忆写盘与跨会话恢复验收**：Standard 与「长征机/逻辑」两种模式各 2 轮真实对话正常，`references/` 与 `research/` 资源解析、预设可见性、以及「对话代号不写盘」的记忆合同均已观测；升级、回滚与 bundle 缺失冲突演练通过；在隔离目录完成真实写盘（`memory.md` 3026 → 3431 字节、写入前后 sha256 核验一致）并由另一个新会话读回。固定快照已迁移到 `0.2.2-rc.5`，`verify-install` 报 `drift: matched`、`overall: supported`（退出码 0）。完整证据见 [Desktop 验收记录](docs/DESKTOP_ACCEPTANCE.md)。原 `dsh-loji` 插件若已安装，需先核对并移除旧插件，避免同名技能重复注册。用户自行安装的同名技能可能优先于随包版本。
+适配包 `loji-dsh` 当前版本为 `1.0.1`；技能注册名始终为 `loji-skill`（当前技能版本 `1.1.4`）。插件直接读取根目录 `SKILL.md` 和相关资源，无需另存一份技能。本插件现已声明角色模式 ID `loji`、显示名「长征机/逻辑」，人格源自根目录 `SKILL.md` 的角色身份与行为规则。**已在本机 DSH Desktop（`0.2.2-rc.5`, Electron 44.7.0）完成安装、真实多轮对话、记忆写盘与跨会话恢复验收**：Standard 与「长征机/逻辑」两种模式各 2 轮真实对话正常，`references/` 与 `research/` 资源解析、预设可见性、以及「对话代号不写盘」的记忆合同均已观测；升级、回滚与 bundle 缺失冲突演练通过；在隔离目录完成真实写盘（`memory.md` 3026 → 3431 字节、写入前后 sha256 核验一致）并由另一个新会话读回。固定快照已迁移到 `0.2.2-rc.5`，`verify-install` 报 `drift: matched`、`overall: supported`（退出码 0）。完整证据见 [Desktop 验收记录](docs/DESKTOP_ACCEPTANCE.md)。原 `dsh-loji` 插件若已安装，需先核对并移除旧插件，避免同名技能重复注册。用户自行安装的同名技能可能优先于随包版本。
 
 默认目录为 `~/.dsh/skills`，上述命令遵守已设置的 `DSH_HOME`。启用默认技能目录时也可使用 `~/.agents/skills`，或 `DSH_AGENTS_HOME` 下的 `skills`；自定义目录按 [客户端文档](https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/skill/skill-filesystem/README.md) 配置。本版本在 DSH Desktop 上完成了插件加载与对话验收，但「跨会话记忆写盘与恢复」未在 Desktop 上单独验收（本轮按记忆合同未触发写入）。
 

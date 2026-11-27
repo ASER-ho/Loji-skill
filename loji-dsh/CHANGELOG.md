@@ -1,5 +1,9 @@
 # loji-dsh changelog
 
+## 1.0.1 — smaller install package
+
+- Ship the runtime files without the repository banner, top-level tests, documentation or Python bytecode. The adapter bundles skill 1.1.4 and the rc.5 preset.
+
 ## 1.0.0 — independent adapter foundation
 
 - Moved DSH-specific integration into `loji-dsh/` while keeping the repository installation URL.
