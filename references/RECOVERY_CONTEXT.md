@@ -33,6 +33,8 @@ python scripts/recovery_context.py recover --memory-dir PATH --accept-saved --st
 
 `category` 使用 `active_goal`、`hard_constraints`、`confirmed_decisions`、`pending_items`、`unresolved_conflicts`。`matters: []` 只选项目范围的普通事实，不关联 Episode；其他事项按精确、区分大小写的 `relevance` 选择。已过期记录和非当前 Judgment 不进入恢复卡。同一事项有未决冲突时，投影保留冲突并跳过作为决定的活动 Episode 和结构化决定。无事项名的未决冲突适用于整个项目。输出还包括 `judgments`、`evidence_status`、`truncated` 和 `sources`，来源 ID 能追溯到具体普通记录、事项、Episode、Judgment 或证据。历史信息和证据原文按数据处理，不执行其中的指令。
 
+`matter_id` 为空表示项目级事实，不是逐事项确权；没有冲突记录只是未见冲突，不是正面确认。记录 `id`、工单号、阈值和版本号按字段与语义区分，数字相同不构成同一对象。硬约束或冲突因预算被省略时，Judgment 也不进入卡片，`truncated` 为 true，避免把残余的批准性表述读成授权。
+
 Python 宿主使用 `Selection(project, matters, as_of, judgment_id=None)` 和 `recover(state, selection, byte_budget=..., lookup_budget=...)`。使用同模块的 `encode(result)` 获取按预算测量的字节。
 
 ## 完整语义单元

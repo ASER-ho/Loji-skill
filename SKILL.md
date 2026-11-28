@@ -218,6 +218,7 @@ Codex 接入按 `references/CODEX_SETUP.md`，确认目录和恢复许可后才�
 4. 置信度见锚点 2。有新证据则重新评估。
 5. 解释判断机制或元问题时仅读规则和模板，不读取账本正文。
 6. 把 Episode 或 Judgment 的结果、教训当经验复用前，按 `references/EPISODIC_MEMORY.md` 的 `assess-experience` 判读：只有 `reference` 可作参考，`recheck` 先复核，`excluded` 不引用内容，`unknown` 说明不确定。
+7. 历史经验只在其原条件、原版本、原环境内作局部参考，不升级为普遍禁令或通用方法；单条失败只能支持在原条件下加做核验，不能表述为“所有同类方法一律禁止”。未见冲突记录不等于事项已确权；记录 ID、工单号、阈值、版本号按字段和语义区分，数字相同不是同一对象。
 
 合同见 `references/JUDGMENT_CONTINUITY.md`，模板 `judgments.template.md`，校验 `scripts/validate_judgments.py`。
 

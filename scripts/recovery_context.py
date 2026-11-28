@@ -321,12 +321,15 @@ def _card(view, limit, statuses, resolve_fact=None):
                                    "matter_id": row["relevance"],
                                    "requires_recheck": any(statuses.get(key) != "valid" for key in ids)},
                            f"episode:{row['id']}")
-    for row in view.judgments.values():
-        ids = _judgment_refs(row)
-        result.add("judgments", {"id": row.id, "stance": row.stance, "basis": list(row.basis),
-                                 "confidence": row.confidence,
-                                 "requires_recheck": any(statuses.get(key) != "valid" for key in ids)},
-                   f"judgment:{row.id}")
+    if not missing_restrictions:
+        for row in view.judgments.values():
+            ids = _judgment_refs(row)
+            result.add("judgments", {"id": row.id, "stance": row.stance, "basis": list(row.basis),
+                                     "confidence": row.confidence,
+                                     "requires_recheck": any(statuses.get(key) != "valid" for key in ids)},
+                       f"judgment:{row.id}")
+    elif view.judgments:
+        result.result["truncated"] = True
     for key, status in statuses.items():
         result.add("evidence_status", {"source_id": key, "status": status}, key)
     return result.result

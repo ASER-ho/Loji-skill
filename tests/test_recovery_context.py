@@ -203,8 +203,25 @@ class RecoveryContextTests(unittest.TestCase):
         self.assertIn("memory_impact.py", memory_doc)
         self.assertIn("恢复不完整", context_doc)
         self.assertIn("assess-experience", judgment_doc)
+        self.assertIn("数字相同", skill)
+        self.assertIn("未出现冲突记录", context_doc)
+        self.assertIn("不进入卡片", recovery_doc)
+        self.assertIn("不因一次失败否定", episode_doc)
+        self.assertIn("所有同类方法一律禁止", episode_doc)
         for status in ("`reference`", "`recheck`", "`excluded`", "`unknown`"):
             self.assertIn(status, episode_doc)
+
+    def test_truncated_restriction_suppresses_approving_judgment(self):
+        self.records = [
+            fact("constraint", "hard_constraints", "禁止正式修改" * 80),
+            fact("approval", "confirmed_decisions", "批准正式修改"),
+        ]
+        self.case["judgments"][0]["stance"] = "批准正式修改"
+        self.write_memory()
+        result = self.recover(byte_budget=450, identities=())
+        self.assertTrue(result["truncated"])
+        self.assertFalse(result["confirmed_decisions"])
+        self.assertEqual(result["judgments"], [])
 
     def test_compacted_context_restores_all_required_synthetic_facts_and_ignores_noise(self):
         # A new instance receives only the same scoped local state. Excess
