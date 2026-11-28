@@ -56,7 +56,7 @@
     "host_version": "<runtime version>",
     "model": "<model id>",
     "effort": "<effort>",
-    "skill_version": "1.1.4",
+    "skill_version": "1.1.5",
     "data_scope": "synthetic-only",
     "started_at": "<ISO-8601>"
   },

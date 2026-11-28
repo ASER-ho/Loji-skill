@@ -147,9 +147,9 @@ class LegacyEvidenceTests(unittest.TestCase):
         self.assertEqual(new.supersedes, old.id)
 
     def test_product_version_is_independent_of_the_migration_test_constant(self):
-        self.assertEqual(schema.SKILL_VERSION, "1.1.4")
-        self.assertIn('version: "1.1.4"', (ROOT / "SKILL.md").read_text(encoding="utf-8"))
-        self.assertIn('skill_version: "1.1.4"', (ROOT / "memory.template.md").read_text(encoding="utf-8"))
+        self.assertEqual(schema.SKILL_VERSION, "1.1.5")
+        self.assertIn('version: "1.1.5"', (ROOT / "SKILL.md").read_text(encoding="utf-8"))
+        self.assertIn('skill_version: "1.1.5"', (ROOT / "memory.template.md").read_text(encoding="utf-8"))
 
 
 class ScorerCounterexamples(unittest.TestCase):

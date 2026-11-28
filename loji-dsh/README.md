@@ -7,7 +7,7 @@ This directory contains the DSH-specific integration for the main [Loji-skill](.
 | Package name | loji-dsh |
 | Current package version | 1.0.1 |
 | Registered skill name | loji-skill |
-| Current bundled skill version | 1.1.4 (from root SKILL.md) |
+| Current bundled skill version | 1.1.5 (from root SKILL.md) |
 | Reserved preset ID | loji |
 | Reserved preset display name | 长征机/逻辑 |
 

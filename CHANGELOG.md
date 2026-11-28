@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.1.5（技能） / loji-dsh 1.0.1（适配包）— Memory Integrity & Experience Reliability
+
+- L115-01：扩展行为评测计划、单臂评分、配对比较、冻结排程与成本/超时记录；没有有效原生数据时保持 `NOT_RUN`，不以确定性结果替代行为证据。
+- L115-02：恢复卡在 Judgment/Episode 之后核查已进入卡片的普通记录显式来源；同一文件 ID 一次调用只读一次并计入同一检索预算；过期、他项和冲突抑制记录不触发读取；observe/lookup 语义未扩大。
+- L115-03：新增 `loji-unit-v1` 完整语义单元（主体/决定/对象/范围/前提/禁止动作/有效期/下一审批/证据）；预算不足时整条省略并标记截断；关键限制被省略时相关决定和 Judgment 均不输出，避免残缺批准被读成授权。
+- L115-04：新增只读 `memory_impact.py`，逐载体审计 Memory/Episode/Judgment/Calibration/归档及宿主逐文件核准的备份；区分显式引用、确定派生、可能相关和无法确认；不删除、不写墓碑、不清理归档。
+- L115-05：新增 `assess-experience` 四档判读（`reference` / `recheck` / `excluded` / `unknown`），核对当前读权、生命周期、版本/环境/前提、证据和冲突；按需规则已接入 `SKILL.md`、`EPISODIC_MEMORY.md` 和 `JUDGMENT_CONTINUITY.md`。L115-06 保持 `RESEARCH_ONLY`。
+- 验证：355 项 Python 回归、16 项 DSH 测试、官方 skills-ref 0.1.0、严格仓库校验、文档一致性、Skill 预算（241 行 / 3,765 汉字）、确定性检索 12/12、S01～S11 候选契约检查通过。B/C 行为证据在 Claude Code 合成宿主采集；U06 三次 C 组均返回 JADE-4 且无禁止标记外显，U07/U08-12/U04/U05 的定向复验见结项证据。
+- 限定例外：U02 名称精确恢复为 2/3；U08 为 12 次状态推进与第 1/4/12 三个真实模型会话检查点，完整 12 模型会话链未完成，转入研究池；两次运行使用 9 次工具调用，保留实际统计。上述例外不写成原冻结条件全部通过。
+- 范围：Memory schema 2、Judgment schema 1、四挡位、协作锁、安全写入、宿主限制和 `loji-dsh` 1.0.1 均不变；不宣称完整遗忘、稳定 Token/费用/延迟或任务性能收益，也不宣称自动长期学习。发布授权：L115-DEV-01 / L115-ACCEPTANCE-REVISION-01 / L115-CORRECTION-01 / L115-RELEASE-01。
+
 ## v1.1.4（技能） / loji-dsh 1.0.1（适配包）
 
 - 精简 DSH 安装包，保留技能、研究资料及运行脚本。打包检查同时验证安装体积、预设、资源和诊断入口。

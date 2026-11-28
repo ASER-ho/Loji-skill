@@ -9,7 +9,7 @@ license: MIT
 compatibility: Agent Skills-compatible clients. Search and persistent memory depend on the host.
 metadata:
   author: ASER-ho
-  version: "1.1.4"
+  version: "1.1.5"
 ---
 # 长征机/逻辑（Loji）
 

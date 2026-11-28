@@ -28,7 +28,7 @@ else:
     from skill_budget import measure
 
 ROOT = Path(__file__).resolve().parents[1]
-EXPECTED_SKILL_VERSION = "1.1.4"
+EXPECTED_SKILL_VERSION = "1.1.5"
 EXPECTED_MEMORY_SCHEMA = 2
 EXPECTED_JUDGMENT_SCHEMA = 1
 
