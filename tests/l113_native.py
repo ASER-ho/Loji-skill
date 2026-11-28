@@ -58,6 +58,7 @@ class Native:
                 "shell_environment_policy.set.PYTHONPATH": str(runner.work / "audit-support"),
                 "shell_environment_policy.set.PYTHONDONTWRITEBYTECODE": "1",
                 "shell_environment_policy.set.PYTHONIOENCODING": "utf-8"}
+            configs.update(getattr(runner, "native_config", {}))
             argv = [str(runner.args.codex), "app-server", "--stdio"]
             for key, value in configs.items():
                 argv += ["-c", key + "=" + json.dumps(value)]
@@ -129,7 +130,8 @@ class Native:
 
     def thread(self, instructions):
         result = self.rpc("thread/start", {"cwd": str(self.runner.work), "model": self.runner.args.model,
-            "modelProvider": "openai", "approvalPolicy": "never", "sandbox": "workspace-write",
+            "modelProvider": "openai", "approvalPolicy": "never",
+            **getattr(self.runner, "thread_sandbox", {"sandbox": "workspace-write"}),
             "ephemeral": True, "experimentalRawEvents": False, "developerInstructions": instructions,
             "config": {"model_reasoning_effort": "high"}})
         tid = result["thread"]["id"]

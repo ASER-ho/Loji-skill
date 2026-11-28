@@ -157,13 +157,14 @@ sys.addaudithook(_hook)
         before = snapshot(self.synthetic)
         before_audit = len(self.audit.read_text(encoding="utf-8").splitlines()) if self.audit.exists() else 0
         save(folder / "input.json", {"threadId": thread, "prompt": prompt, "before": before})
+        started = time.monotonic()
         self.native.rpc("turn/start", {"threadId": thread, "input": [{"type": "text", "text": prompt,
             "text_elements": []}], "model": self.args.model, "effort": "high"})
         events = []
-        deadline = time.monotonic() + 600
+        deadline = started + getattr(self, "turn_seconds", 600)
         while time.monotonic() < deadline:
             try:
-                event = self.native.receive(timeout=40)
+                event = self.native.receive(timeout=max(0, min(40, deadline - time.monotonic())))
             except queue.Empty:
                 print(json.dumps({"label": label, "state": "waiting_on_native_turn"}), flush=True)
                 continue
@@ -180,7 +181,9 @@ sys.addaudithook(_hook)
         result = {"threadId": thread, "status": events[-1]["params"]["turn"]["status"],
             "answer": "\n".join(x.get("text", "") for x in items if x.get("type") == "agentMessage"),
             "tools": tools, "python_audit": [json.loads(x) for x in lines[before_audit:]],
-            "before": before, "after": snapshot(self.synthetic)}
+            "before": before, "after": snapshot(self.synthetic),
+            "token_usage": [e["params"] for e in events if e.get("method") == "thread/tokenUsage/updated"],
+            "seconds": round(time.monotonic() - started, 3)}
         for name, digest in self.manifest.items():
             if hashlib.sha256((self.skill / name).read_bytes()).hexdigest() != digest:
                 raise RuntimeError("installed product changed during host test")

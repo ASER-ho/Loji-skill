@@ -486,11 +486,11 @@ def _artifact(folder: Path, ref: Any) -> Path:
     return path
 
 
-def _execution_evidence(item: dict, case: dict, folder: Path) -> None:
+def _execution_evidence(item: dict, case: dict, folder: Path) -> list[dict]:
     evidence = item.get("deterministic_evidence")
     if not isinstance(evidence, list) or not evidence:
         raise HarnessError("missing objective execution evidence; self-report is insufficient")
-    executions = 0
+    executions = []
     for proof in evidence:
         if not isinstance(proof, dict) or proof.get("kind") not in {
                 "tool_log", "audit_log", "file_hash", "test_output"} or proof.get("result") != "pass":
@@ -525,6 +525,7 @@ def _execution_evidence(item: dict, case: dict, folder: Path) -> None:
         if not isinstance(refs, list) or len(refs) != len(case["input"]) or len(set(refs)) != len(refs):
             raise HarnessError("each fixed input requires a distinct native turn log")
         answers = []
+        native_tools = []
         for ref in refs:
             events = [schema.decode_json(line) for line in _artifact(folder, ref).read_text(encoding="utf-8").splitlines() if line.strip()]
             if not all(isinstance(e, dict) for e in events):
@@ -534,11 +535,15 @@ def _execution_evidence(item: dict, case: dict, folder: Path) -> None:
                 raise HarnessError("native turn was not completed")
             answers.append("\n".join(e["params"]["item"].get("text", "") for e in events
                 if e.get("method") == "item/completed" and e.get("params", {}).get("item", {}).get("type") == "agentMessage"))
+            native_tools.extend(e["params"]["item"] for e in events
+                if e.get("method") == "item/completed" and e.get("params", {}).get("item", {}).get("type")
+                in {"commandExecution", "fileChange", "mcpToolCall", "dynamicToolCall", "webSearch"})
         if "\n\n".join(answers) != item["actual_answer"]:
             raise HarnessError("answer is not bound to the native transcript")
-        executions += 1
+        executions.append({**record, "native_tools": native_tools})
     if not executions:
         raise HarnessError("no native execution record; artifact labels do not prove an operation")
+    return executions
 
 
 def score(results_path: Path, root: Path | str | None = None, *, fixture_name: str | None = None) -> dict:
@@ -663,14 +668,39 @@ def score(results_path: Path, root: Path | str | None = None, *, fixture_name: s
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("action", choices=("check", "deterministic", "plan", "score"))
+    parser.add_argument("action", choices=("check", "deterministic", "plan", "score",
+                                            "utility-plan", "utility-score", "utility-compare"))
     parser.add_argument("--root", type=Path, default=ROOT,
                         help="repository root; default is this checkout")
     parser.add_argument("--out", type=Path, help="output directory or file")
     parser.add_argument("--results", type=Path, help="behavior results JSON for score")
     parser.add_argument("--fixture", help="fixed fixture name for score; must match results")
+    parser.add_argument("--utility-fixtures", type=Path, help="external frozen L115 fixture directory")
+    parser.add_argument("--utility-result", type=Path, action="append", default=[],
+                        help="repeat for each blinded, scored arm and repetition in utility-compare")
     args = parser.parse_args(argv)
     try:
+        if args.action in {"utility-plan", "utility-score", "utility-compare"}:
+            if not args.utility_fixtures:
+                parser.error("utility actions require --utility-fixtures")
+            if __package__:
+                from . import eval_utility
+            else:
+                import eval_utility
+            if args.action == "utility-plan":
+                if not args.out:
+                    parser.error("utility-plan requires --out")
+                eval_utility.write_plan(args.utility_fixtures, args.out)
+            elif args.action == "utility-score":
+                if not args.results:
+                    parser.error("utility-score requires --results")
+                print(json.dumps(eval_utility.score(args.utility_fixtures, args.results),
+                                 ensure_ascii=False, indent=2))
+            else:
+                summary = eval_utility.compare(args.utility_fixtures, args.utility_result)
+                print(json.dumps(summary, ensure_ascii=False, indent=2))
+                return 0 if summary["status"] == "REQUIRES_LIFECYCLE_AND_BLIND_REVIEW" else 1
+            return 0
         if args.action == "check":
             errors = check_fixtures(args.root)
             for error in errors:
@@ -692,7 +722,7 @@ def main(argv: list[str] | None = None) -> int:
         summary = score(args.results, args.root, fixture_name=args.fixture)
         print(json.dumps(summary, ensure_ascii=False, indent=2))
         return 0 if summary["result"] == "PASS" else 1
-    except (OSError, ValueError, HarnessError) as exc:
+    except (OSError, ValueError, KeyError, TypeError) as exc:
         print(f"eval refused: {exc}", file=sys.stderr)
         return 2
 
