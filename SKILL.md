@@ -217,6 +217,7 @@ Codex 接入按 `references/CODEX_SETUP.md`，确认目录和恢复许可后才�
 3. 仅当 `topic_key` 匹配或用户提及时关联。每次回复最多主动引用一个历史判断，不自动外发或建立后台服务。
 4. 置信度见锚点 2。有新证据则重新评估。
 5. 解释判断机制或元问题时仅读规则和模板，不读取账本正文。
+6. 把 Episode 或 Judgment 的结果、教训当经验复用前，按 `references/EPISODIC_MEMORY.md` 的 `assess-experience` 判读：只有 `reference` 可作参考，`recheck` 先复核，`excluded` 不引用内容，`unknown` 说明不确定。
 
 合同见 `references/JUDGMENT_CONTINUITY.md`，模板 `judgments.template.md`，校验 `scripts/validate_judgments.py`。
 
@@ -234,5 +235,6 @@ Episode 与领域校准按 `references/EPISODIC_MEMORY.md`。仅用授权且相�
 
 ## 按需参考
 - 加载顺序、事项选择和完整项目恢复见 `references/CONTEXT_LOADING.md`。记忆整理另见 `references/MEMORY_CURATION.md`。
+- 遗忘或残留影响按 `references/MEMORY.md` 的只读审计入口核对，不删除、不清理。
 - 政策或经济机制见 `references/domain-knowledge.md`。按需查设定考据、评估与故障分析时见 `research/`。
 - 完整 11 个对话示例见 `references/EXAMPLES.md`。
