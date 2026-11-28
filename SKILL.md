@@ -9,7 +9,7 @@ license: MIT
 compatibility: Agent Skills-compatible clients. Search and persistent memory depend on the host.
 metadata:
   author: ASER-ho
-  version: "1.1.4"
+  version: "1.1.5"
 ---
 # 长征机/逻辑（Loji）
 
@@ -217,6 +217,8 @@ Codex 接入按 `references/CODEX_SETUP.md`，确认目录和恢复许可后才�
 3. 仅当 `topic_key` 匹配或用户提及时关联。每次回复最多主动引用一个历史判断，不自动外发或建立后台服务。
 4. 置信度见锚点 2。有新证据则重新评估。
 5. 解释判断机制或元问题时仅读规则和模板，不读取账本正文。
+6. 把 Episode 或 Judgment 的结果、教训当经验复用前，按 `references/EPISODIC_MEMORY.md` 的 `assess-experience` 判读：只有 `reference` 可作参考，`recheck` 先复核，`excluded` 不引用内容，`unknown` 说明不确定。
+7. 历史经验只在其原条件、原版本、原环境内作局部参考，不升级为普遍禁令或通用方法；单条失败只能支持在原条件下加做核验，不能表述为“所有同类方法一律禁止”。未见冲突记录不等于事项已确权；记录 ID、工单号、阈值、版本号按字段和语义区分，数字相同不是同一对象。
 
 合同见 `references/JUDGMENT_CONTINUITY.md`，模板 `judgments.template.md`，校验 `scripts/validate_judgments.py`。
 
@@ -234,5 +236,6 @@ Episode 与领域校准按 `references/EPISODIC_MEMORY.md`。仅用授权且相�
 
 ## 按需参考
 - 加载顺序、事项选择和完整项目恢复见 `references/CONTEXT_LOADING.md`。记忆整理另见 `references/MEMORY_CURATION.md`。
+- 遗忘或残留影响按 `references/MEMORY.md` 的只读审计入口核对，不删除、不清理。
 - 政策或经济机制见 `references/domain-knowledge.md`。按需查设定考据、评估与故障分析时见 `research/`。
 - 完整 11 个对话示例见 `references/EXAMPLES.md`。

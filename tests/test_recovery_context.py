@@ -73,6 +73,156 @@ class RecoveryContextTests(unittest.TestCase):
                    "identities": self.identities, **overrides}
         return recovery.lookup(self.state, self.selection, key, **options)
 
+    def test_registered_memory_sources_follow_existing_sources_and_deduplicate(self):
+        self.records += [
+            fact("both", "hard_constraints", "[source_id:artifact:project] [source_id:artifact:missing]"),
+            fact("same", "pending_items", "[source_id:artifact:project] [source_id:artifact:matter]"),
+            fact("expired-source", "pending_items", "[source_id:artifact:expired]", expires_on="2040-01-01"),
+            fact("oversized-source", "pending_items", "X" * 5000 + "[source_id:artifact:large]"),
+        ]
+        for key in ("expired", "large"):
+            (self.project / (key + ".txt")).write_text(key, encoding="utf-8")
+            self.identities.append(evidence.observe(self.project, "artifact:" + key, key + ".txt"))
+        self.write_memory()
+        with patch.object(evidence, "verify", wraps=evidence.verify) as io_calls:
+            result = self.recover(lookup_budget=5)
+        self.assertEqual([call.args[1].source_id for call in io_calls.call_args_list],
+                         ["artifact:judgment", "artifact:matter", "artifact:project"])
+        self.assertIn({"source_id": "artifact:project", "status": "valid"}, result["evidence_status"])
+        self.assertTrue(next(row for row in result["hard_constraints"] if row["id"] == "both")["requires_recheck"])
+        self.assertFalse(next(row for row in result["pending_items"] if row["id"] == "same")["requires_recheck"])
+        limited = self.recover()
+        self.assertIn({"source_id": "artifact:project", "status": "unknown"}, limited["evidence_status"])
+        self.assertTrue(limited["truncated"])
+
+    def test_ordinary_source_stale_missing_root_and_observe_eligibility(self):
+        self.records.append(fact("ordinary", "pending_items", "[source_id:artifact:project]"))
+        self.write_memory()
+        kwargs = dict(project_root=self.project, byte_budget=4096, lookup_budget=5)
+        observed = recovery.observe(self.state, self.selection, "artifact:project", "project.txt", **kwargs)
+        self.assertEqual(observed["reason"], "source_not_linked")
+        self.assertEqual(self.lookup("artifact:project")["level"], "project_record")
+        path = self.project / "project.txt"
+        with patch.object(evidence, "verify", side_effect=AssertionError("no approved evidence root")):
+            self.assertIn({"source_id": "artifact:project", "status": "unknown"},
+                          self.recover(lookup_budget=5, project_root=None)["evidence_status"])
+        path.write_text("changed", encoding="utf-8")
+        self.assertIn({"source_id": "artifact:project", "status": "stale"},
+                      self.recover(lookup_budget=5)["evidence_status"])
+        path.unlink()
+        self.assertIn({"source_id": "artifact:project", "status": "missing"},
+                      self.recover(lookup_budget=5)["evidence_status"])
+
+    def test_omitted_restrictions_suppress_legacy_decision_and_unit_is_atomic(self):
+        self.case["episodes"] = []
+        legacy = fact("approval", "confirmed_decisions", "获准预研")
+        constraint = fact("constraint", "hard_constraints", "禁止改动和合并" * 100)
+        self.records = [constraint, legacy]
+        self.write_memory()
+        result = self.recover(byte_budget=330, identities=())
+        self.assertTrue(result["truncated"])
+        self.assertFalse(result["confirmed_decisions"])
+        unit = dict(actor="synthetic approver", decision="pre-research", object="feature X", scope="analysis",
+                    premises="build is pinned", restrictions="no edits or merge", validity="until rerun",
+                    next_review="lead approval", evidence="未记录")
+        complete = recovery.UNIT_PREFIX + json.dumps(unit)
+        self.records = [fact("whole", "confirmed_decisions", complete)]
+        self.write_memory()
+        self.assertEqual(self.recover()["confirmed_decisions"][0]["text"], complete)
+        self.assertFalse(self.recover(byte_budget=330)["confirmed_decisions"])
+        self.assertTrue(self.recover(byte_budget=330)["truncated"])
+        del unit["restrictions"]
+        self.records[0]["text"] = recovery.UNIT_PREFIX + json.dumps(unit)
+        self.write_memory()
+        with self.assertRaisesRegex(ValueError, "invalid recovery unit fields"):
+            self.recover()
+
+    def test_experience_gate_compares_version_scope_lifecycle_and_evidence(self):
+        item = next(row for row in self.case["episodes"] if row["id"] == "E-LAMP")
+        item["outcome"] = "synthetic verification; failed under known conditions"
+        self.write_memory()
+        review = dict(withdrawn=False, related=True, premises_match=True, scope_verified=True,
+                      evidence_sufficient=True, prior_version="2.0", current_version="2.0",
+                      prior_environment="lab", current_environment="lab", contrary="none", outcome="failure")
+
+        def assess(**overrides):
+            return recovery.assess_experience(
+                self.state, self.selection, "E-LAMP", review={**review, **overrides},
+                byte_budget=4096, lookup_budget=6, project_root=self.project, identities=self.identities,
+            )
+
+        self.assertEqual(assess()["use"], "counterexample")
+        self.assertEqual(assess(current_version="3.0")["status"], "recheck")
+        self.assertEqual(assess(current_environment=None)["status"], "unknown")
+        self.assertEqual(assess(withdrawn=True)["status"], "excluded")
+        (self.project / "matter.txt").unlink()
+        self.assertEqual(assess()["reason"], "evidence_changed")
+        self.state.configure("off", user_confirmed=True)
+        with patch.object(io, "read", side_effect=AssertionError("unauthorized body read")):
+            self.assertEqual(assess()["reason"], "authorization")
+
+    def test_experience_cli_exposes_four_tiers_without_record_content(self):
+        item = next(row for row in self.case["episodes"] if row["id"] == "E-LAMP")
+        item["outcome"] = "synthetic verification; failed under known conditions"
+        self.write_memory()
+        review = dict(withdrawn=False, related=True, premises_match=True, scope_verified=True,
+                      evidence_sufficient=True, prior_version="2.0", current_version="2.0",
+                      prior_environment="lab", current_environment="lab", contrary="none", outcome="failure")
+        base = {"project": PROJECT, "matters": self.case["expected"]["matters"],
+                "as_of": FIXTURE["as_of"], "experience_id": "E-LAMP",
+                "identities": [identity.to_dict() for identity in self.identities]}
+        command = [sys.executable, "-B", str(ROOT / "scripts/recovery_context.py"),
+                   "assess-experience", "--memory-dir", str(self.memory),
+                   "--project-root", str(self.project), "--accept-saved", "--state-read",
+                   "--body-read", "--byte-budget", "4096", "--lookup-budget", "6"]
+
+        def run(**overrides):
+            request = {**base, "review": {**review, **overrides}}
+            result = subprocess.run(command, input=json.dumps(request).encode("utf-8"),
+                                    capture_output=True, check=True)
+            self.assertNotIn("synthetic verification", result.stdout.decode("utf-8"))
+            return json.loads(result.stdout)
+
+        self.assertEqual(run()["use"], "counterexample")
+        self.assertEqual(run(current_version="3.0")["status"], "recheck")
+        self.assertEqual(run(withdrawn=True)["status"], "excluded")
+        self.assertEqual(run(current_environment=None)["status"], "unknown")
+
+    def test_experience_and_impact_rules_are_wired_into_on_demand_documents(self):
+        skill = (ROOT / "SKILL.md").read_text(encoding="utf-8")
+        recovery_doc = (ROOT / "references/RECOVERY_CONTEXT.md").read_text(encoding="utf-8")
+        episode_doc = (ROOT / "references/EPISODIC_MEMORY.md").read_text(encoding="utf-8")
+        memory_doc = (ROOT / "references/MEMORY.md").read_text(encoding="utf-8")
+        context_doc = (ROOT / "references/CONTEXT_LOADING.md").read_text(encoding="utf-8")
+        judgment_doc = (ROOT / "references/JUDGMENT_CONTINUITY.md").read_text(encoding="utf-8")
+        self.assertIn("assess-experience", skill)
+        self.assertIn("只读审计", skill)
+        self.assertIn("loji-unit-v1", recovery_doc)
+        self.assertIn("assess-experience", episode_doc)
+        self.assertIn("memory_impact.py", episode_doc)
+        self.assertIn("memory_impact.py", memory_doc)
+        self.assertIn("恢复不完整", context_doc)
+        self.assertIn("assess-experience", judgment_doc)
+        self.assertIn("数字相同", skill)
+        self.assertIn("未出现冲突记录", context_doc)
+        self.assertIn("不进入卡片", recovery_doc)
+        self.assertIn("不因一次失败否定", episode_doc)
+        self.assertIn("所有同类方法一律禁止", episode_doc)
+        for status in ("`reference`", "`recheck`", "`excluded`", "`unknown`"):
+            self.assertIn(status, episode_doc)
+
+    def test_truncated_restriction_suppresses_approving_judgment(self):
+        self.records = [
+            fact("constraint", "hard_constraints", "禁止正式修改" * 80),
+            fact("approval", "confirmed_decisions", "批准正式修改"),
+        ]
+        self.case["judgments"][0]["stance"] = "批准正式修改"
+        self.write_memory()
+        result = self.recover(byte_budget=450, identities=())
+        self.assertTrue(result["truncated"])
+        self.assertFalse(result["confirmed_decisions"])
+        self.assertEqual(result["judgments"], [])
+
     def test_compacted_context_restores_all_required_synthetic_facts_and_ignores_noise(self):
         # A new instance receives only the same scoped local state. Excess
         # history enters after the required project records in a fresh turn.

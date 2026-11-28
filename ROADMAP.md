@@ -3,58 +3,46 @@
 This file is the repository-local contract for the current release. It is
 written to be readable without access to any maintainer-only workspace.
 
-## Current release: v1.1.4
+## Current release: v1.1.5
 
-> The loji-dsh 1.0.1 packaging and CI changes are recorded in [CHANGELOG.md](CHANGELOG.md).
-> See the [DSH host acceptance record](docs/DESKTOP_ACCEPTANCE.md) for tested configurations.
+> The `loji-dsh` 1.0.1 packaging and CI changes are recorded in [CHANGELOG.md](CHANGELOG.md).
 
-**Theme:** Memory & Reasoning Enhancements
+**Theme:** Memory Integrity & Experience Reliability
 
-**Status:** RELEASED / v1.1.4.
-**Authorization:** L114-DEV-01 / L114-FINAL-GATE-01 /
-L114-CONTEXT-FIX-01 / L114-RELEASE-01.
-**Implementation:** Claude. **Independent review, correction, host validation
-and release:** Codex.
-**Branch:** implementation/loji-1.1.4-core-enhancements.
-**Baseline:** 9001e1fcc3b67e0822f5528951ae4390cd5c65da (v1.1.3).
-**Accepted functional candidate:** bb533271a6aaae02adf83d12d0830731bf6c9fca.
+**Status:** RELEASED / v1.1.5.
+**Authorization:** L115-DEV-01 / L115-ACCEPTANCE-REVISION-01 /
+L115-CORRECTION-01 / L115-RELEASE-01.
+**Implementation:** Claude. **Independent review and release:** management window.
+**Branch:** implementation/loji-1.1.5-memory-integrity.
+**Baseline:** 0a60f24dc477a1ba5b636f5cdde53e0461596ffb (v1.1.4).
+**Accepted functional candidate:** 486e7eaf32f9d4047d398b0ce776a4b67b5266af.
 
 Scope is limited to five modules:
 
 | ID | Scope | Limits |
 |---|---|---|
-| L114-01 | Unified behavior-eval protocol, fixed fidelity/retrieval/evidence samples, deterministic harness | No third-party eval platform or model service; scoring fixed before behavior runs |
-| L114-02 | On-demand loading, joint ordinary-Memory/context project recovery, matter discovery, single-transaction reuse | One authorized full-context fallback when scope remains incomplete and the user has not limited it; no filesystem-wide scan, automatic project map or new retrieval algorithm |
-| L114-03 | Evidence tiers in existing `basis`, re-verification and partial-invalidation rules | No new ledger fields or schema migration; validator checks structure only |
-| L114-04 | Duplicate taxonomy and read-only consolidation suggestions | No automatic merge/delete, background job or database; Memory/Judgment schema stay 2/1 |
-| L114-05 | Positive behavior phrasing, persona-structure audit, source provenance | Core anchors, routes, forms, models and heuristics unchanged; no third-party character identities |
+| L115-01 | Task-utility evaluation plan, single-arm scoring and paired comparison | No valid native data means NOT_RUN; deterministic checks do not replace behavior evidence |
+| L115-02 | Registered evidence association in recovery cards | One read per file ID per call; expired, other-matter and conflict-suppressed candidates do not trigger reads; observe/lookup scope unchanged |
+| L115-03 | Complete semantic units and truncation-safe recovery | Whole unit omitted when over budget; related decisions and Judgments suppressed when a key restriction is omitted |
+| L115-04 | Read-only derivation impact and residue audit | No deletion, tombstone, archive cleanup or write; approved backups only |
+| L115-05 | Four-tier historical-experience credibility | Only `reference` is usable; one experience stays local to its conditions |
 
-L114-DEV-01 delivered 277 tests. L114-FINAL-GATE-01 independently reviewed and
-corrected authorization, legacy-basis compatibility and objective scoring
-evidence; 301 tests and H114-01, 02, 04, 05 plus H113-01–07 passed. The initial
-engineering host environment block was resolved using the verified standalone
-Codex 0.167.0-alpha.4.1 native app-server and an actually available model.
-These are v1.1.4 host executions, not transferred v1.1.3 acceptance.
+L115-06 remains `RESEARCH_ONLY`. Release validation: 355 Python tests, 16 DSH
+tests, official skills-ref 0.1.0, strict checks, documentation consistency,
+skill budget and 12/12 deterministic retrieval. B/C behavior evidence was
+collected on a synthetic Claude Code host. Exceptions are preserved rather than
+rewritten: U02 exact-name recovery is 2/3; U08 has 12 state advances and three
+real model-session checkpoints (the full 12-session chain is deferred to the
+research pool); two runs used nine tool calls. U06 returned JADE-4 three times
+per C arm with no forbidden marker exposure. No complete forgetting, stable
+Token/cost/latency or task-performance gain, or automatic long-term learning is
+claimed. Memory/Judgment schemas remain 2/1; `loji-dsh` remains 1.0.1.
 
-Historical H114-03 remains PARTIAL. After the joint recovery and scope-fallback
-correction, L114-CONTEXT-FIX-01 R1–R4 passed: original small data, two independent
-large-data sessions and the exact-scope control recovered all six frozen fact
-groups; nonprefix related matters and ambiguous ownership were also checked.
-Ordinary Memory facts cannot be replaced by Episode output, and raw historical
-Episodes remain subject to existing context and judgment validation. User scope
-restrictions, fresh authorization, locks and host limits remain in effect.
+## Previous release: v1.1.4
 
-The final 309-test regression retains all 240 formal baseline tests. Strict
-checks, official skills-ref 0.1.0 and complete-patch replay passed. Host evidence
-covers project-level Codex installation and fixed synthetic data, with off body
-reads and all read_only body writes at zero, and host denial overriding saved
-auto. It does not establish automatic recovery across all scales, models,
-installation methods or hosts; Claude Code and DSH were not accepted here.
-No significant persona or judgment score improvement, stable Token, cost,
-latency or overall task-performance benefit is claimed. Curation remains
-suggestions only. No Project Ledger, database, vector index, background service
-or new Memory/Judgment schema is introduced. L114-RELEASE-01 authorizes release
-after final document-only local checks and branch/master/tag CI gates.
+**Status:** RELEASED / v1.1.4. **Candidate:** `bb533271a6aaae02adf83d12d0830731bf6c9fca`.
+Theme: Memory & Reasoning Enhancements. See [CHANGELOG.md](CHANGELOG.md) for
+the full L114 scope, validation and limits.
 
 ## Previous release: v1.1.3
 

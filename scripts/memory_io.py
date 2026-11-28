@@ -176,7 +176,7 @@ def read_text(path: Path | str) -> str:
         return handle.read()
 
 
-def _read_stable(path: Path) -> tuple[bytes, MemoryVersion]:
+def _read_stable(path: Path, *, max_bytes: int | None = None) -> tuple[bytes, MemoryVersion]:
     """Read bytes and a token, retrying if the file changes mid-read."""
     for _ in range(3):
         checked = guard.managed_path(path)
@@ -184,7 +184,9 @@ def _read_stable(path: Path) -> tuple[bytes, MemoryVersion]:
         with os.fdopen(fd, "rb") as handle:
             guard.checked_fd(checked, fd)
             before = os.fstat(fd)
-            data = handle.read()
+            data = handle.read() if max_bytes is None else handle.read(max_bytes + 1)
+            if max_bytes is not None and len(data) > max_bytes:
+                raise MemoryIOError("state file exceeds read byte limit")
             after = os.fstat(fd)
         # Windows lstat reports creation time where fstat reports change
         # time after rename. Compare the same stat source for generations.
@@ -198,13 +200,15 @@ def read_version(path: Path | str) -> MemoryVersion:
     return version
 
 
-def read(path: Path | str) -> MemoryReadResult:
+def read(path: Path | str, *, max_bytes: int | None = None) -> MemoryReadResult:
     """Return content and version token from one stable read.
 
     The content is decoded as UTF-8. The version token is computed from the
     exact same bytes, so callers can pass it directly to ``atomic_write``.
     """
-    data, version = _read_stable(Path(path))
+    if max_bytes is not None and (type(max_bytes) is not int or max_bytes < 0):
+        raise ValueError("invalid read byte limit")
+    data, version = _read_stable(Path(path), max_bytes=max_bytes)
     return MemoryReadResult(data=data, text=data.decode("utf-8"), version=version)
 
 

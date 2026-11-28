@@ -56,7 +56,7 @@
     "host_version": "<runtime version>",
     "model": "<model id>",
     "effort": "<effort>",
-    "skill_version": "1.1.4",
+    "skill_version": "1.1.5",
     "data_scope": "synthetic-only",
     "started_at": "<ISO-8601>"
   },
@@ -144,3 +144,17 @@
 - `evals.json`、`trigger_queries.json`：题目与触发样本。
 
 新增的场景集合（保真度、检索、证据）由本协议统一记录，避免重复建设已有评分卡。
+
+## 10. L115 任务效用冻结计划
+
+评测侧校验外部 `behavior.json` 和 `history.json` 的冻结哈希，生成只含 `case_id/input` 的答题清单、独立评分计划及 ABC/BCA/CAB 排程。评分计划、原样本与评分结果不得进入宿主工作区或 Skill 安装。U08 按 `/1`、`/4`、`/12` 标记检查点，任务原文保持相同。
+
+```text
+python scripts/eval_harness.py utility-plan --utility-fixtures <外部夹具目录> --out <新建评测目录>
+python scripts/eval_harness.py utility-score --utility-fixtures <外部夹具目录> --results <单臂单重复评分记录>
+python scripts/eval_harness.py utility-compare --utility-fixtures <外部夹具目录> --utility-result <单臂记录> ...
+```
+
+单臂记录沿用 `protocol_version`、`run` 和 `cases`，增加 `fixture_sha256`（文件名到哈希的映射）、`arm` 和 `repeat`。`run` 记录 `source_sha` 及固定 `budget`。每项保留逐字答案、冻结规则、原生证据引用、盲评理由和独立失败。证据准确性、约束保留、错误采用以及工具和答案的残留外显分别记录分子和分母。无可观察机会记 `[0, 0]`。用量使用实际宿主记录，无法取得时写 `null`。任务效用按完整交付计算，0–2 分另报。U06 禁用标记在已完成工具输出或答复出现时记独立隐私失败。
+
+原生证据缺失的题目记 `NOT_RUN`。三臂比较报告原生环境一致性、U02/U06 硬条件、配对退化与针对缺口的改进次数。比较器结果仍需按固定矩阵复核真实会话生命周期及盲评证据。

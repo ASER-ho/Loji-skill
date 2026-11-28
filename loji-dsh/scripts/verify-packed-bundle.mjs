@@ -92,7 +92,7 @@ assert.equal(resolve(loaded.resourceBase.path), root);
 assert.equal(loaded.content, await readFile(join(root, "SKILL.md"), "utf8"));
 const metadata = JSON.parse(await readFile(join(root, "loji-dsh/lib/skill-meta.json"), "utf8"));
 assert.equal(metadata.name, "loji-skill");
-assert.equal(metadata.version, "1.1.4");
+assert.equal(metadata.version, "1.1.5");
 const patch = (await readFile(join(root, "loji-dsh/cordis.patch.yml"), "utf8")).replace(/\r\n/g, "\n");
 assert.match(patch, /id: loji-skill\n      name: loji-dsh/);
 assert.match(patch, /id: preset-loji\n      name: '@deepseek-ai\/dsh-agent-preset'/);

@@ -75,6 +75,22 @@ Loji 的核心是**角色与分析**，不依赖任何特定环境能力。面�
 
 回退插件和配置时保留用户当前数据。普通正文更新（包括遗忘）没有自动正文恢复凭证。无损 schema 迁移失败可使用当次进程持有的恢复凭证，恢复前核对目标的最新指纹、标识与版本及备份哈希。发现任何后续保存则停止恢复。备份仍是私有文件，按授权单独管理，禁止用备份重建被忘记的内容。
 
+### 只读派生影响与残留审计（v1.1.5）
+
+用户要求遗忘、撤回或核对某条记录的影响时，可先用 `scripts/memory_impact.py` 生成只读报告，再按独立写授权处理删除。审计本身不删除、不改写、不写墓碑、不清理归档或备份：
+
+```text
+python scripts/memory_impact.py --memory-dir PATH --accept-saved --state-read --body-read --byte-budget 4096 --lookup-budget 4
+```
+
+请求经标准输入传入，包含 `kind`（memory/episode/judgment/source/calibration）、精确 `key` 或经批准的 `literal`、`purpose`（impact/residue）。报告逐载体列出状态、关系、安全的定位符、依据类别、是否独立支持及覆盖范围，并分开计数已确认、可能残留、无法访问、无法判断与未扫描。
+
+- 只检查同一次授权快照内受控的 Memory、Judgment、Episode、Calibration 与归档；备份必须是宿主逐文件核准的名单。
+- 路径越界、预算不足、不可解析或快照在扫描中变化时，停止相应分支并报告，不继续猜测。
+- 摘要省略目标原文、绝对路径和可猜测的短秘密指纹；指纹只用于快照一致性。
+- `off` 时零正文读取；`read_only` 可读且文件哈希不变。
+- 报告只描述本次已核对区域和时点。撤回表示禁止继续按该用途取用，不表示残留已经消失；删除指定记录仍须另行授权。
+
 ## 5. 记忆授权模型
 
 `memory_policy` 决定记忆写入行为：
@@ -230,7 +246,7 @@ memory_policy 仅 auto/explicit/read_only/off；confirmed 必须为布尔值。�
 
 ## 13. 格式版本检查
 
-- v1.1.4 支持的 Memory schema 版本：1、2。schema 1 仍可按原规则读取；schema 2 启用共同经历和领域协作校准。
+- v1.1.5 支持的 Memory schema 版本：1、2。schema 1 仍可按原规则读取；schema 2 启用共同经历和领域协作校准。
 - 只比较 schema_version 与支持列表；`skill_version` 是产品版本，不参与 schema 兼容判断。
 - 本版本不执行自动 schema 迁移；不得自动迁移、不得覆盖真实 `memory.md`。有用户针对本次操作的明确授权时才能使用迁移命令。
 - 缺失或不支持的 schema：明确停止读写。检查格式仅报告版本。

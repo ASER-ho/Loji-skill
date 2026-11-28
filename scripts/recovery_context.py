@@ -25,6 +25,14 @@ PRIORITY = ("hard_constraints", "unresolved_conflicts", "active_goal",
             "confirmed_decisions", "pending_items")
 MAX_REQUEST_BYTES = 256 * 1024
 INSUFFICIENT = "evidence_insufficient"
+UNIT_PREFIX = "loji-unit-v1\n"
+UNIT_FIELDS = {
+    "confirmed_decisions": {"actor", "decision", "object", "scope", "premises",
+                            "restrictions", "validity", "next_review"},
+    "active_goal": {"goal", "scope", "acceptance", "next_action"},
+    "unresolved_conflicts": {"matter", "positions", "unresolved", "next_check"},
+    "pending_items": {"deliverable", "approver", "next_check"},
+}
 
 
 def empty_card():
@@ -55,12 +63,13 @@ class _Card:
             size += len(encode(source)) + bool(sources)
         if self.size + size > self.limit:
             self.result["truncated"] = True
-            return
+            return False
         self.size += size
         entries.append(item)
         if new_source:
             sources.append(source)
             self.source_ids.add(source)
+        return True
 
 
 @dataclass
@@ -107,9 +116,26 @@ class _View:
     episodes: list
     unresolved: list
     judgments: dict
+    disputed_episodes: tuple[str, ...] = ()
 
 
-def _records(doc):
+def _validate_unit(row):
+    """Recognize the opt-in, atomic record inside the unchanged text field."""
+    text = row["text"]
+    if not text.startswith(UNIT_PREFIX):
+        return
+    unit = schema.decode_json(text[len(UNIT_PREFIX):])
+    fields = UNIT_FIELDS.get(row["category"])
+    schema.require(fields is not None and isinstance(unit, dict)
+                   and unit.keys() == fields | {"evidence"}, "invalid recovery unit fields")
+    schema.require(all(schema.nonempty(unit[key]) for key in fields), "missing recovery unit detail")
+    sources = unit["evidence"]
+    schema.require(sources == "未记录" or isinstance(sources, list) and sources and all(
+        isinstance(source, str) and evidence.SOURCE_MARKER.fullmatch(source) for source in sources),
+        "invalid recovery unit evidence")
+
+
+def _records(doc, *, ordinary_context=None):
     """Parse only a top-level loji-recovery fence in the ordinary context section."""
     content = doc.text[slice(*doc.sections["近期上下文"][1:])]
     fence = None
@@ -118,7 +144,9 @@ def _records(doc):
     found = False
     records = []
     for line in content.splitlines():
+        opening_recovery = False
         marker = schema.FENCE.fullmatch(line)
+        in_recovery = payload is not None
         if fence is not None:
             if marker and marker[1].startswith(fence) and not marker[2].strip():
                 fence = None
@@ -135,6 +163,10 @@ def _records(doc):
                 schema.require(not found, "duplicate loji-recovery block")
                 found = True
                 payload = []
+                opening_recovery = True
+        if ordinary_context is not None and not (in_recovery or opening_recovery):
+            ordinary_context.append(line)
+    schema.require(payload is None, "unclosed loji-recovery block")
     schema.require(isinstance(records, list), "loji-recovery must be an array")
     required = {"id", "project", "category", "text"}
     optional = {"matter_id", "expires_on", "summary_source_id"}
@@ -152,6 +184,7 @@ def _records(doc):
                        "invalid recovery matter name")
         schema.require(row.get("expires_on") is None or schema.valid_date(row["expires_on"]),
                        "invalid recovery expiry")
+        _validate_unit(row)
         if "summary_source_id" in row:
             note = row["summary_source_id"]
             schema.require(isinstance(note, str) and note.startswith("note:") and len(note) > 5 and
@@ -189,6 +222,11 @@ def _snapshot(state, auth, selection, budget):
     ordinary_conflicts = {row.get("matter_id") for row in facts if row["category"] == "unresolved_conflicts"}
     current_judgments = {row.id: row for row in document.judgments
                          if row.status == "active" and row.created_at <= selection.as_of}
+    disputed = tuple(row["id"] for row in episodes if row["state"] == "active"
+                     and row["date"] <= selection.as_of
+                     and (row["expires_on"] is None or row["expires_on"] >= selection.as_of)
+                     and (None in ordinary_conflicts or row["relevance"] in ordinary_conflicts
+                          or row["relevance"] in unresolved))
     current_episodes = []
     for row in projected["episodes"]:
         if None in ordinary_conflicts or row["relevance"] in ordinary_conflicts:
@@ -199,7 +237,7 @@ def _snapshot(state, auth, selection, budget):
     ids = dict.fromkeys(key for row in current_episodes for key in row["related_judgments"])
     if selection.judgment_id in current_judgments:
         ids[selection.judgment_id] = None
-    return _View(facts, current_episodes, unresolved, {key: current_judgments[key] for key in ids})
+    return _View(facts, current_episodes, unresolved, {key: current_judgments[key] for key in ids}, disputed)
 
 
 def _eligible_facts(view):
@@ -238,20 +276,35 @@ def _probe(state, root, index, key, budget):
     return status, data, None if status == "valid" else "file_" + status
 
 
-def _card(view, limit, statuses, exhausted=False):
+def _card(view, limit, statuses, resolve_fact=None):
     result = _Card(limit)
+    missing_restrictions = set()
 
     facts = _eligible_facts(view)
     for field in PRIORITY:
         for row in facts:
             if row["category"] == field:
+                matter = row.get("matter_id")
+                if field == "confirmed_decisions" and (None in missing_restrictions or
+                        (matter is None and missing_restrictions) or matter in missing_restrictions):
+                    result.result["truncated"] = True
+                    continue
                 item = {"id": row["id"], "text": row["text"], "matter_id": row.get("matter_id")}
                 if "summary_source_id" in row:
                     item["summary_source_id"] = row["summary_source_id"]
                 refs = evidence.references(row["text"])
+                pending = resolve_fact is not None and any(key not in statuses for key in refs)
                 if refs:
-                    item["requires_recheck"] = any(statuses.get(key) != "valid" for key in refs)
-                result.add(field, item, f"memory:{row['id']}")
+                    # Reserve the longer boolean until the row is admitted.
+                    item["requires_recheck"] = not pending and any(statuses.get(key) != "valid" for key in refs)
+                if result.add(field, item, f"memory:{row['id']}"):
+                    if pending:
+                        resolve_fact(refs)
+                        if any(statuses.get(key) != "valid" for key in refs):
+                            item["requires_recheck"] = True
+                            result.size -= len(b"false") - len(b"true")
+                elif field in ("hard_constraints", "unresolved_conflicts"):
+                    missing_restrictions.add(matter)
         if field == "unresolved_conflicts":
             for matter in view.unresolved:
                 result.add(field, {"matter_id": matter}, f"matter:{matter}")
@@ -259,21 +312,26 @@ def _card(view, limit, statuses, exhausted=False):
             for row in view.episodes:
                 if row["kind"] != "important_joint_decision":
                     continue
+                if None in missing_restrictions or row["relevance"] in missing_restrictions:
+                    result.result["truncated"] = True
+                    continue
                 ids = _episode_refs(row) + [source for key in row["related_judgments"]
                                            for source in _judgment_refs(view.judgments[key])]
                 result.add(field, {"id": row["id"], "text": row["summary"],
                                    "matter_id": row["relevance"],
                                    "requires_recheck": any(statuses.get(key) != "valid" for key in ids)},
                            f"episode:{row['id']}")
-    for row in view.judgments.values():
-        ids = _judgment_refs(row)
-        result.add("judgments", {"id": row.id, "stance": row.stance, "basis": list(row.basis),
-                                 "confidence": row.confidence,
-                                 "requires_recheck": any(statuses.get(key) != "valid" for key in ids)},
-                   f"judgment:{row.id}")
+    if not missing_restrictions:
+        for row in view.judgments.values():
+            ids = _judgment_refs(row)
+            result.add("judgments", {"id": row.id, "stance": row.stance, "basis": list(row.basis),
+                                     "confidence": row.confidence,
+                                     "requires_recheck": any(statuses.get(key) != "valid" for key in ids)},
+                       f"judgment:{row.id}")
+    elif view.judgments:
+        result.result["truncated"] = True
     for key, status in statuses.items():
         result.add("evidence_status", {"source_id": key, "status": status}, key)
-    result.result["truncated"] |= exhausted
     return result.result
 
 
@@ -295,7 +353,15 @@ def recover(state, selection, *, byte_budget, lookup_budget, project_root=None, 
             view = _snapshot(state, auth, selection, budget)
             statuses = {key: _probe(state, project_root, index, key, budget)[0]
                         for key in _linked_sources(view)}
-            return _card(view, byte_budget, statuses, budget.exhausted)
+
+            def resolve_fact(refs):
+                for key in refs:
+                    if key in index and key not in statuses:
+                        statuses[key] = _probe(state, project_root, index, key, budget)[0]
+
+            card = _card(view, byte_budget, statuses, resolve_fact)
+            card["truncated"] |= budget.exhausted
+            return card
     except (ms.AccessError, ms.StateError, io.MemoryLockUnavailableError, io.MemoryLockTimeoutError):
         return empty_card()
 
@@ -392,9 +458,78 @@ def observe(state, selection, source_id, relative_path, *, project_root, lookup_
         return {"status": "unknown", "reason": "file_unavailable"}
 
 
+def assess_experience(state, selection, experience_id, *, review, byte_budget, lookup_budget,
+                      project_root=None, identities=()):
+    """Apply current authorization, lifecycle, evidence and host-verified applicability."""
+    _check_limits(byte_budget, lookup_budget)
+    schema.require(isinstance(experience_id, str) and
+                   (schema.EPISODE_ID.fullmatch(experience_id) or schema.JUDGMENT_ID.fullmatch(experience_id)),
+                   "an exact Episode or Judgment ID is required")
+    flags = {"withdrawn", "related", "premises_match", "scope_verified", "evidence_sufficient"}
+    contexts = {"prior_version", "current_version", "prior_environment", "current_environment"}
+    schema.require(isinstance(review, dict) and review.keys() <= flags | contexts | {"contrary", "outcome"},
+                   "invalid applicability fields")
+    schema.require(all(type(review.get(key)) is bool or review.get(key) is None for key in flags),
+                   "invalid applicability flag")
+    schema.require(all(review.get(key) is None or schema.nonempty(review[key]) and len(review[key]) <= 256
+                       for key in contexts), "invalid environment or version")
+    schema.require(review.get("contrary") in (None, "none", "conflict", "refuted") and
+                   review.get("outcome") in (None, "success", "failure"), "invalid review finding")
+
+    def result(status, reason, **details):
+        report = {"version": 1, "status": status, "reason": reason, **details}
+        return report if len(encode(report)) <= byte_budget else {
+            "version": 1, "status": "unknown", "reason": "byte_budget",
+        }
+
+    budget = _Budget(lookup_budget)
+    try:
+        with state.access(readonly_lock=True) as auth:
+            if review.get("withdrawn") or review.get("related") is False or review.get("contrary") == "refuted":
+                return result("excluded", "withdrawn_unrelated_or_refuted")
+            view = _snapshot(state, auth, selection, budget)
+            if budget.exhausted:
+                return result("unknown", "lookup_budget")
+            if experience_id in view.disputed_episodes or review.get("contrary") == "conflict":
+                return result("recheck", "current_conflict")
+            judgment = view.judgments.get(experience_id)
+            episode = next((row for row in view.episodes if row["id"] == experience_id), None)
+            if judgment and (judgment.outcome or judgment.lesson):
+                refs = (_judgment_refs(judgment) + evidence.references(judgment.outcome or "")
+                        + evidence.references(judgment.lesson or ""))
+            elif episode and (episode["outcome"] or episode["kind"] == "correction_or_learning"):
+                refs = _episode_refs(episode) + [
+                    ref for key in episode["related_judgments"] for ref in _judgment_refs(view.judgments[key])
+                ]
+            else:
+                return result("excluded", "not_current_scoped_experience")
+            if any(review.get(prior) is not None and review.get(current) is not None
+                   and review[prior] != review[current] for prior, current in
+                   (("prior_version", "current_version"), ("prior_environment", "current_environment"))):
+                return result("recheck", "version_or_environment_changed")
+            if review.get("premises_match") is False or review.get("scope_verified") is False:
+                return result("recheck", "premises_or_scope_changed")
+            index = _identity_map(identities)
+            states = {ref: _probe(state, project_root, index, ref, budget)[0] for ref in dict.fromkeys(refs)}
+            details = {"evidence_status": states}
+            if any(value in ("stale", "missing") for value in states.values()):
+                return result("recheck", "evidence_changed", **details)
+            if (any(value == "unknown" for value in states.values()) or any(review.get(key) is None for key in contexts)
+                    or not all(review.get(key) is True for key in flags - {"withdrawn"})
+                    or review.get("withdrawn") is not False or review.get("contrary") != "none"
+                    or review.get("outcome") is None):
+                return result("unknown", "applicability_unconfirmed", **details)
+            use = "counterexample" if review["outcome"] == "failure" else "historical_reference"
+            return result("reference", "conditions_verified", use=use, **details)
+    except (ms.StateError, io.MemoryLockUnavailableError, io.MemoryLockTimeoutError):
+        return result("excluded", "authorization")
+    except (OSError, io.MemoryIOError, io.guard.PathBoundaryError, jl.JudgmentLedgerError, schema.FormatError):
+        return result("unknown", "snapshot_unavailable")
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("action", choices=("recover", "lookup", "observe"))
+    parser.add_argument("action", choices=("recover", "lookup", "observe", "assess-experience"))
     parser.add_argument("--memory-dir", required=True, help="fixed absolute path from trusted host configuration")
     parser.add_argument("--project-root", help="independently authorized absolute project evidence directory")
     parser.add_argument("--byte-budget", required=True, type=int)
@@ -416,7 +551,8 @@ def main(argv=None):
             accept_saved=args.accept_saved, state_read=args.state_read, body_read=args.body_read,
             host_policy=args.host_policy, host_consent=args.host_consent,
         ))
-        run = {"recover": recover, "lookup": lookup, "observe": observe}[args.action]
+        run = {"recover": recover, "lookup": lookup, "observe": observe,
+               "assess-experience": assess_experience}[args.action]
         result = run(state, selection, byte_budget=args.byte_budget, lookup_budget=args.lookup_budget,
                      project_root=args.project_root, **request)
     except (TypeError, ValueError, OSError, io.MemoryIOError, jl.JudgmentLedgerError) as exc:
